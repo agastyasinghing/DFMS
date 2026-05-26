@@ -8,11 +8,36 @@
     mission: 'All'
   };
 
+  function getEnums() {
+    return (globalThis.DFMS_DATA && globalThis.DFMS_DATA.ENUMS) || {};
+  }
+
+  function getDrones() {
+    return (globalThis.DFMS_DATA && globalThis.DFMS_DATA.DRONES) || [];
+  }
+
+  function getOperators() {
+    return (globalThis.DFMS_DATA && globalThis.DFMS_DATA.OPERATORS) || [];
+  }
+
+  function findDroneById(droneId) {
+    return getDrones().find(function (drone) {
+      return drone.id === droneId;
+    }) || null;
+  }
+
+  function findOperatorById(operatorId) {
+    return getOperators().find(function (operator) {
+      return operator.id === operatorId;
+    }) || null;
+  }
+
   var state = {
     missions: [],
     filteredMissions: [],
     selectedMissionId: null,
-    filters: Object.assign({}, DEFAULT_FILTERS)
+    filters: Object.assign({}, DEFAULT_FILTERS),
+    editedMissionIds: new Set()
   };
 
   function clearElement(element) {
@@ -22,9 +47,14 @@
     }
   }
 
-  function createCell(text) {
+  function createCell(text, className) {
     var cell = document.createElement('td');
     cell.textContent = text == null || text === '' ? '—' : String(text);
+
+    if (className) {
+      cell.className = className;
+    }
+
     return cell;
   }
 
@@ -32,9 +62,7 @@
     if (!value) return '—';
 
     var date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return String(value);
-    }
+    if (Number.isNaN(date.getTime())) return String(value);
 
     return date.toLocaleString('en-US', {
       year: 'numeric',
@@ -50,14 +78,11 @@
   function formatWind(mission) {
     if (!mission) return '—';
 
-    var speed = mission.windSpeedMph;
-    var direction = mission.windDirection;
+    if (typeof mission.windSpeedMph !== 'number' && !mission.windDirection) return '—';
+    if (typeof mission.windSpeedMph !== 'number') return String(mission.windDirection);
+    if (!mission.windDirection) return mission.windSpeedMph + ' mph';
 
-    if (typeof speed !== 'number' && !direction) return '—';
-    if (typeof speed !== 'number') return String(direction);
-    if (!direction) return speed + ' mph';
-
-    return speed + ' mph ' + direction;
+    return mission.windSpeedMph + ' mph ' + mission.windDirection;
   }
 
   function formatWeather(mission) {
@@ -81,16 +106,16 @@
 
   function getStatusClass(value) {
     var map = {
-      'Clear': 'status-clear',
-      'Caution': 'status-caution',
-      'Hold': 'status-hold',
+      Clear: 'status-clear',
+      Caution: 'status-caution',
+      Hold: 'status-hold',
       'Weather Hold': 'status-hold',
-      'Blocked': 'status-blocked',
-      'Critical': 'status-critical',
-      'Ready': 'status-ready',
-      'Scheduled': 'status-scheduled',
+      Blocked: 'status-blocked',
+      Critical: 'status-critical',
+      Ready: 'status-ready',
+      Scheduled: 'status-scheduled',
       'In Flight': 'status-in-flight',
-      'Completed': 'status-completed',
+      Completed: 'status-completed',
       'Needs Review': 'status-review',
       'Wildlife Review': 'status-review',
       'Route Review': 'status-review',
@@ -116,6 +141,27 @@
     pill.className = 'status-pill ' + getStatusClass(value) + (extraClass ? ' ' + extraClass : '');
     pill.textContent = value || '—';
     return pill;
+  }
+
+  function createEditableSelect(field, missionId, currentValue, options, compact) {
+    var select = document.createElement('select');
+    select.className = 'editable-control' + (compact ? ' editable-control--compact' : '');
+    select.setAttribute('data-edit-field', field);
+    select.setAttribute('data-mission-id', missionId);
+
+    options.forEach(function (optionData) {
+      var option = document.createElement('option');
+      option.value = optionData.value;
+      option.textContent = optionData.label;
+
+      if (String(optionData.value) === String(currentValue || '')) {
+        option.selected = true;
+      }
+
+      select.appendChild(option);
+    });
+
+    return select;
   }
 
   function getActionLabel(mission) {
@@ -161,10 +207,35 @@
       return;
     }
 
+    var enums = getEnums();
+    var priorityOptions = (enums.priority || ['Low', 'Medium', 'High', 'Critical']).map(function (value) {
+      return { value: value, label: value };
+    });
+    var missionOptions = (enums.missionStatus || ['Not Scheduled', 'Ready', 'Scheduled', 'In Flight', 'Completed', 'Blocked', 'Needs Review']).map(function (value) {
+      return { value: value, label: value };
+    });
+    var droneOptions = [{ value: '', label: 'Unassigned' }].concat(
+      getDrones().map(function (drone) {
+        return {
+          value: drone.id,
+          label: drone.label + ' (' + (typeof drone.batteryPercent === 'number' ? drone.batteryPercent + '%' : '—') + ')'
+        };
+      })
+    );
+    var operatorOptions = [{ value: '', label: 'Unassigned' }].concat(
+      getOperators().map(function (operator) {
+        return {
+          value: operator.id,
+          label: operator.name + (operator.certification === 'None' ? ' (no certificate)' : '')
+        };
+      })
+    );
+
     missionsToRender.forEach(function (mission) {
       var row = document.createElement('tr');
       row.classList.add('mission-row');
 
+      if (state.editedMissionIds.has(mission.missionId)) row.classList.add('mission-row--edited');
       if (mission.missionStatus === 'Blocked' || mission.safetyStatus === 'Blocked') row.classList.add('mission-row--blocked');
       if (mission.missionStatus === 'Ready') row.classList.add('mission-row--ready');
       if (mission.priority === 'Critical') row.classList.add('mission-row--critical');
@@ -172,35 +243,45 @@
       if (mission.missionStatus === 'In Flight') row.classList.add('mission-row--in-flight');
       if (mission.missionStatus === 'Completed') row.classList.add('mission-row--completed');
 
-      row.appendChild(createCell(mission.turbineId));
-      row.appendChild(createCell(mission.siteName));
+      row.appendChild(createCell(mission.turbineId, 'cell-readonly'));
+      row.appendChild(createCell(mission.siteName, 'cell-readonly'));
 
       var turbineStatusCell = document.createElement('td');
+      turbineStatusCell.className = 'cell-readonly';
       turbineStatusCell.appendChild(createStatusPill(mission.turbineStatus));
       row.appendChild(turbineStatusCell);
 
-      row.appendChild(createCell(formatDateTime(mission.lastInspection)));
+      row.appendChild(createCell(formatDateTime(mission.lastInspection), 'cell-readonly'));
 
       var priorityCell = document.createElement('td');
-      priorityCell.appendChild(createStatusPill(mission.priority, getPriorityClass(mission.priority)));
+      priorityCell.appendChild(createEditableSelect('priority', mission.missionId, mission.priority, priorityOptions, true));
       row.appendChild(priorityCell);
 
-      row.appendChild(createCell(mission.damageSeverity));
-      row.appendChild(createCell(formatWeather(mission)));
-      row.appendChild(createCell(formatWind(mission)));
-      row.appendChild(createCell(mission.assignedDroneLabel || mission.assignedDroneId));
-      row.appendChild(createCell(formatBattery(mission.droneBatteryPercent)));
-      row.appendChild(createCell(mission.operatorName));
-      row.appendChild(createCell(mission.operatorCertification));
-      row.appendChild(createCell(formatCrew(mission.crewOnsite)));
-      row.appendChild(createCell(mission.wildlifeRisk));
+      row.appendChild(createCell(mission.damageSeverity, 'cell-readonly'));
+      row.appendChild(createCell(formatWeather(mission), 'cell-readonly'));
+      row.appendChild(createCell(formatWind(mission), 'cell-readonly'));
+
+      var droneCell = document.createElement('td');
+      droneCell.appendChild(createEditableSelect('assignedDroneId', mission.missionId, mission.assignedDroneId || '', droneOptions, true));
+      row.appendChild(droneCell);
+
+      row.appendChild(createCell(formatBattery(mission.droneBatteryPercent), 'cell-readonly'));
+
+      var operatorCell = document.createElement('td');
+      operatorCell.appendChild(createEditableSelect('assignedOperatorId', mission.missionId, mission.assignedOperatorId || '', operatorOptions, true));
+      row.appendChild(operatorCell);
+
+      row.appendChild(createCell(mission.operatorCertification, 'cell-readonly'));
+      row.appendChild(createCell(formatCrew(mission.crewOnsite), 'cell-readonly'));
+      row.appendChild(createCell(mission.wildlifeRisk, 'cell-readonly'));
 
       var safetyCell = document.createElement('td');
+      safetyCell.className = 'cell-readonly';
       safetyCell.appendChild(createStatusPill(mission.safetyStatus));
       row.appendChild(safetyCell);
 
       var missionStatusCell = document.createElement('td');
-      missionStatusCell.appendChild(createStatusPill(mission.missionStatus));
+      missionStatusCell.appendChild(createEditableSelect('missionStatus', mission.missionId, mission.missionStatus, missionOptions, true));
       row.appendChild(missionStatusCell);
 
       var actionCell = document.createElement('td');
@@ -215,6 +296,24 @@
       if (actionLabel === 'Review' || actionLabel === 'Review Route') actionButton.classList.add('action-button--review');
 
       actionCell.appendChild(actionButton);
+
+      if (state.editedMissionIds.has(mission.missionId)) {
+        var editedChip = document.createElement('span');
+        editedChip.className = 'edited-chip';
+        editedChip.textContent = 'Edited';
+        actionCell.appendChild(editedChip);
+      }
+
+      var noteInput = document.createElement('input');
+      noteInput.type = 'text';
+      noteInput.maxLength = 160;
+      noteInput.value = mission.opsNote || '';
+      noteInput.className = 'editable-control editable-control--compact ops-note-input';
+      noteInput.setAttribute('aria-label', 'Ops note for ' + (mission.turbineId || mission.missionId));
+      noteInput.setAttribute('data-edit-field', 'opsNote');
+      noteInput.setAttribute('data-mission-id', mission.missionId);
+
+      actionCell.appendChild(noteInput);
       row.appendChild(actionCell);
       gridBody.appendChild(row);
     });
@@ -252,7 +351,7 @@
 
   function missionMatchesFilters(mission, filters) {
     var query = normalizeSearchText(filters.search);
-    var searchableText = normalizeSearchText([
+    var text = normalizeSearchText([
       mission.missionId,
       mission.turbineId,
       mission.siteName,
@@ -265,7 +364,7 @@
       mission.opsNote
     ].join(' '));
 
-    if (query && searchableText.indexOf(query) === -1) return false;
+    if (query && text.indexOf(query) === -1) return false;
     if (filters.site !== 'All' && mission.siteName !== filters.site) return false;
     if (filters.priority !== 'All' && mission.priority !== filters.priority) return false;
     if (filters.weather !== 'All' && mission.weatherClearance !== filters.weather) return false;
@@ -279,12 +378,19 @@
     var summary = document.getElementById('filter-result-summary');
     if (!summary) return;
 
-    if (shown === 0) {
-      summary.textContent = 'No missions match ' + total + ' static records. KPI cards remain global.';
-      return;
-    }
+    summary.textContent = shown === 0
+      ? 'No missions match ' + total + ' static records. KPI cards remain global.'
+      : 'Showing ' + shown + ' of ' + total + ' missions. KPI cards remain global.';
+  }
 
-    summary.textContent = 'Showing ' + shown + ' of ' + total + ' missions. KPI cards remain global.';
+  function updateEditSessionSummary() {
+    var summary = document.getElementById('edit-session-summary');
+    if (!summary) return;
+
+    var count = state.editedMissionIds.size;
+    summary.textContent = count === 0
+      ? 'Demo edits: none this session (in-memory only).'
+      : 'Demo edits: ' + count + ' mission(s) changed this session (in-memory only).';
   }
 
   function applyFilters() {
@@ -295,6 +401,7 @@
 
     renderDispatchGrid(state.filteredMissions);
     renderResultSummary(state.missions.length, state.filteredMissions.length);
+    updateEditSessionSummary();
   }
 
   function populateFilterOptions() {
@@ -302,10 +409,12 @@
     if (!controls.site) return;
 
     var uniqueSites = state.missions
-      .map(function (mission) { return mission.siteName; })
+      .map(function (mission) {
+        return mission.siteName;
+      })
       .filter(Boolean)
-      .filter(function (siteName, index, allSites) {
-        return allSites.indexOf(siteName) === index;
+      .filter(function (site, index, all) {
+        return all.indexOf(site) === index;
       })
       .sort(function (a, b) {
         return a.localeCompare(b);
@@ -313,10 +422,10 @@
 
     clearElement(controls.site);
 
-    ['All'].concat(uniqueSites).forEach(function (siteName) {
+    ['All'].concat(uniqueSites).forEach(function (site) {
       var option = document.createElement('option');
-      option.value = siteName;
-      option.textContent = siteName;
+      option.value = site;
+      option.textContent = site;
       controls.site.appendChild(option);
     });
 
@@ -359,6 +468,66 @@
         applyFilters();
       });
     }
+  }
+
+  function updateMissionField(missionId, field, value) {
+    var mission = state.missions.find(function (item) {
+      return item.missionId === missionId;
+    });
+
+    if (!mission) return;
+
+    mission[field] = value;
+
+    if (field === 'assignedDroneId') {
+      var selectedDrone = findDroneById(value);
+      mission.assignedDroneId = value || '';
+      mission.assignedDroneLabel = selectedDrone ? selectedDrone.label : 'Unassigned';
+      mission.droneBatteryPercent = selectedDrone && typeof selectedDrone.batteryPercent === 'number'
+        ? selectedDrone.batteryPercent
+        : null;
+    }
+
+    if (field === 'assignedOperatorId') {
+      var selectedOperator = findOperatorById(value);
+      mission.assignedOperatorId = value || '';
+      mission.operatorName = selectedOperator ? selectedOperator.name : 'Unassigned';
+      mission.operatorCertification = selectedOperator ? selectedOperator.certification : 'None';
+    }
+  }
+
+  function markMissionEdited(missionId) {
+    state.editedMissionIds.add(missionId);
+  }
+
+  function refreshAfterEdit() {
+    applyFilters();
+    updateKpis();
+  }
+
+  function handleGridEdit(event) {
+    var target = event.target;
+    if (!target || !target.dataset) return;
+
+    var field = target.dataset.editField;
+    var missionId = target.dataset.missionId;
+    if (!field || !missionId) return;
+
+    updateMissionField(missionId, field, target.value);
+    markMissionEdited(missionId);
+    refreshAfterEdit();
+  }
+
+  function bindGridEditEvents() {
+    var gridBody = document.getElementById('dispatch-grid-body');
+    if (!gridBody) return;
+
+    gridBody.addEventListener('change', handleGridEdit);
+    gridBody.addEventListener('input', function (event) {
+      if (event.target && event.target.dataset && event.target.dataset.editField === 'opsNote') {
+        handleGridEdit(event);
+      }
+    });
   }
 
   function updateKpis() {
@@ -410,18 +579,18 @@
       return new Date(mission.lastSync) > new Date(currentMax) ? mission.lastSync : currentMax;
     }, '');
 
-    if (latestSync) {
-      syncElement.textContent = 'Last sync: ' + formatDateTime(latestSync) + ' UTC';
-      return;
-    }
-
-    syncElement.textContent = 'Last sync: static dataset loaded';
+    syncElement.textContent = latestSync
+      ? 'Last sync: ' + formatDateTime(latestSync) + ' UTC'
+      : 'Last sync: static dataset loaded';
   }
 
   function loadMissions() {
     var dfmsData = globalThis.DFMS_DATA;
     var missions = (dfmsData && dfmsData.SAMPLE_MISSIONS) || globalThis.DFMS_SAMPLE_MISSIONS;
-    return Array.isArray(missions) ? missions.slice() : [];
+
+    return Array.isArray(missions)
+      ? missions.map(function (mission) { return Object.assign({}, mission); })
+      : [];
   }
 
   function initialize() {
@@ -437,6 +606,7 @@
 
     populateFilterOptions();
     bindFilterEvents();
+    bindGridEditEvents();
     applyFilters();
     updateKpis();
     updateSyncStatus();
