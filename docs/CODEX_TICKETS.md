@@ -2,7 +2,7 @@
 
 ## Current Ticket
 
-- **DFMS-P0-001 — Repository scaffold, documentation shell, and static prototype entrypoint**
+- **DFMS-P0-007 — Search and filters**
   - Status: completed
 
 ## Tentative Next Tickets
@@ -14,7 +14,7 @@
 3. DFMS-P0-004 — Base HTML layout. (completed)
 4. DFMS-P0-005 — Command-center visual system. (completed)
 5. DFMS-P0-006 — Dynamic dispatch grid rendering. (completed)
-6. DFMS-P0-007 — Search and filters.
+6. DFMS-P0-007 — Search and filters. (completed)
 7. DFMS-P0-008 — Editable planning fields.
 8. DFMS-P0-009 — Dispatch blocker/rule logic.
 9. DFMS-P0-010 — Windy-inspired map panel.
