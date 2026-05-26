@@ -40,6 +40,58 @@
     editedMissionIds: new Set()
   };
 
+  var BLOCKER_DEFINITIONS = {
+    crew: {
+      code: 'crew',
+      safetyStatus: 'Crew Conflict',
+      label: 'Crew Conflict',
+      message: 'Maintenance crew is onsite in the mission corridor.',
+      severity: 'hard',
+      source: 'Maintenance Schedule'
+    },
+    weather: {
+      code: 'weather',
+      safetyStatus: 'Weather Hold',
+      label: 'Weather Hold',
+      message: 'Weather clearance is Hold or wind exceeds drone envelope.',
+      severity: 'hard',
+      source: 'Weather Forecasting System'
+    },
+    certification: {
+      code: 'certification',
+      safetyStatus: 'Certification Missing',
+      label: 'Certification Missing',
+      message: 'Assigned operator lacks required Remote Pilot certification.',
+      severity: 'hard',
+      source: 'HRIS'
+    },
+    battery: {
+      code: 'battery',
+      safetyStatus: 'Battery Low',
+      label: 'Battery Low',
+      message: 'Assigned drone battery is below dispatch threshold.',
+      severity: 'hard',
+      source: 'Drone Vendor App'
+    },
+    wildlife: {
+      code: 'wildlife',
+      safetyStatus: 'Wildlife Review',
+      label: 'Wildlife Review',
+      message: 'Wildlife risk is high and requires analyst review.',
+      severity: 'soft',
+      source: 'Environmental Layer'
+    },
+    route: {
+      code: 'route',
+      safetyStatus: 'Route Review',
+      label: 'Route Review',
+      message: 'Route intersects a restricted or review-required area.',
+      severity: 'soft',
+      source: 'Environmental Layer'
+    }
+  };
+  var BLOCKER_ORDER = ['crew', 'weather', 'certification', 'battery', 'wildlife', 'route'];
+
   function clearElement(element) {
     if (!element) return;
     while (element.firstChild) {
@@ -178,6 +230,66 @@
     return 'Review';
   }
 
+  function computeMissionBlockers(mission) {
+    if (!mission) return [];
+    var blockers = [];
+    var drone = findDroneById(mission.assignedDroneId);
+
+    if (mission.crewOnsite === true) blockers.push(BLOCKER_DEFINITIONS.crew);
+    if (mission.weatherClearance === 'Hold') blockers.push(BLOCKER_DEFINITIONS.weather);
+    if (drone && typeof drone.maxSafeWindMph === 'number' && typeof mission.windSpeedMph === 'number' && mission.windSpeedMph > drone.maxSafeWindMph) {
+      blockers.push(BLOCKER_DEFINITIONS.weather);
+    }
+    if (mission.operatorCertification !== 'Remote Pilot Certificate') blockers.push(BLOCKER_DEFINITIONS.certification);
+    if (!mission.assignedDroneId || mission.assignedDroneId === 'Unassigned') blockers.push(BLOCKER_DEFINITIONS.battery);
+    if (typeof mission.droneBatteryPercent === 'number' && mission.droneBatteryPercent < 30) blockers.push(BLOCKER_DEFINITIONS.battery);
+    if (!mission.assignedOperatorId || mission.assignedOperatorId === 'OP-999' || mission.operatorName === 'Unassigned') blockers.push(BLOCKER_DEFINITIONS.certification);
+    if (mission.wildlifeRisk === 'High') blockers.push(BLOCKER_DEFINITIONS.wildlife);
+    if (!mission.flightPath || mission.flightPath.restrictedAreaOverlap === true) blockers.push(BLOCKER_DEFINITIONS.route);
+
+    return blockers.filter(function (blocker, index, all) {
+      return all.findIndex(function (entry) { return entry.code === blocker.code; }) === index;
+    });
+  }
+
+  function getPrimarySafetyStatus(blockers) {
+    if (!blockers.length) return 'Clear';
+    return blockers[0].safetyStatus;
+  }
+
+  function enforceMissionStatus(mission, blockers) {
+    var hasHardBlocker = blockers.some(function (blocker) { return blocker.severity === 'hard'; });
+    var hasSoftBlocker = blockers.some(function (blocker) { return blocker.severity === 'soft'; });
+
+    if (hasHardBlocker && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled')) {
+      mission.missionStatus = 'Blocked';
+      return;
+    }
+    if (!hasHardBlocker && hasSoftBlocker && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled')) {
+      mission.missionStatus = 'Needs Review';
+    }
+  }
+
+  function recomputeMissionRules(mission) {
+    var blockers = computeMissionBlockers(mission);
+    blockers.sort(function (a, b) {
+      return BLOCKER_ORDER.indexOf(a.code) - BLOCKER_ORDER.indexOf(b.code);
+    });
+    mission.blockers = blockers;
+    mission.safetyStatus = getPrimarySafetyStatus(blockers);
+    mission.hasHardBlocker = blockers.some(function (blocker) { return blocker.severity === 'hard'; });
+    mission.requiresReview = !mission.hasHardBlocker && blockers.some(function (blocker) { return blocker.severity === 'soft'; });
+    mission.isDispatchable = mission.safetyStatus === 'Clear' && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled');
+    mission.ruleSummary = blockers.length
+      ? blockers.map(function (blocker) { return blocker.label; }).join(' · ')
+      : 'Prototype rule check: no demo blockers';
+    enforceMissionStatus(mission, blockers);
+  }
+
+  function recomputeAllMissionRules() {
+    state.missions.forEach(recomputeMissionRules);
+  }
+
   function renderEmptyState(message) {
     var gridBody = document.getElementById('dispatch-grid-body');
     if (!gridBody) return;
@@ -278,6 +390,18 @@
       var safetyCell = document.createElement('td');
       safetyCell.className = 'cell-readonly';
       safetyCell.appendChild(createStatusPill(mission.safetyStatus));
+      if (Array.isArray(mission.blockers) && mission.blockers.length) {
+        var blockerWrap = document.createElement('div');
+        blockerWrap.className = 'blocker-chip-wrap';
+        mission.blockers.forEach(function (blocker) {
+          var chip = document.createElement('span');
+          chip.className = 'blocker-chip blocker-chip--' + blocker.severity;
+          chip.title = blocker.message + ' Source: ' + blocker.source + '. Prototype rule check.';
+          chip.textContent = blocker.label;
+          blockerWrap.appendChild(chip);
+        });
+        safetyCell.appendChild(blockerWrap);
+      }
       row.appendChild(safetyCell);
 
       var missionStatusCell = document.createElement('td');
@@ -501,6 +625,7 @@
   }
 
   function refreshAfterEdit() {
+    recomputeAllMissionRules();
     applyFilters();
     updateKpis();
   }
@@ -607,6 +732,7 @@
     populateFilterOptions();
     bindFilterEvents();
     bindGridEditEvents();
+    recomputeAllMissionRules();
     applyFilters();
     updateKpis();
     updateSyncStatus();
