@@ -11,60 +11,68 @@
   <body>
     <main id="dfms-app" class="app-shell">
       <header id="app-header" class="panel" aria-label="Global command center header">
-        <h1>DFMS Mission Control</h1>
-        <p>Drone Inspection Dispatch Grid</p>
-        <p>Prototype / Demo Mode</p>
-        <p id="role-label">Role: Operations Manager</p>
-        <p id="sync-status">Last sync: static demo data</p>
-        <p>Static class prototype. No live drone, weather, map, HRIS, or vendor integrations.</p>
+        <div>
+          <h1 class="header-title">DFMS Mission Control</h1>
+          <p class="header-subtitle">Drone Inspection Dispatch Grid</p>
+        </div>
+        <div>
+          <span class="metadata-pill">Prototype / Demo Mode</span>
+          <p id="role-label" class="header-meta">Role: Operations Manager</p>
+          <p id="sync-status" class="header-meta">Last sync: static demo data</p>
+        </div>
+        <p class="header-disclaimer">Static class prototype. No live drone, weather, map, HRIS, or vendor integrations.</p>
       </header>
 
       <section id="kpi-strip" class="panel" aria-label="Mission KPI strip">
         <h2>Operations Snapshot</h2>
-        <div>
-          <article id="kpi-ready"><h3>Ready to Schedule</h3><p>--</p><small>Awaiting rule-engine counts.</small></article>
-          <article id="kpi-blocked"><h3>Blocked Missions</h3><p>--</p><small>Blockers summarized from mission state.</small></article>
-          <article id="kpi-critical"><h3>Critical Priority</h3><p>--</p><small>Critical missions requiring rapid attention.</small></article>
-          <article id="kpi-weather"><h3>Weather Holds</h3><p>--</p><small>Missions paused for weather clearance.</small></article>
-          <article id="kpi-crew"><h3>Crew Conflicts</h3><p>--</p><small>Potential crew and drone overlap cases.</small></article>
-          <article id="kpi-wildlife"><h3>Wildlife Reviews</h3><p>--</p><small>Missions pending environmental review.</small></article>
+        <div class="kpi-grid">
+          <article id="kpi-ready" class="kpi-card kpi-card--ready"><h3>Ready to Schedule</h3><p class="metric-value">--</p><small>Awaiting rule-engine counts.</small></article>
+          <article id="kpi-blocked" class="kpi-card kpi-card--blocked"><h3>Blocked Missions</h3><p class="metric-value">--</p><small>Blockers summarized from mission state.</small></article>
+          <article id="kpi-critical" class="kpi-card kpi-card--critical"><h3>Critical Priority</h3><p class="metric-value">--</p><small>Critical missions requiring rapid attention.</small></article>
+          <article id="kpi-weather" class="kpi-card kpi-card--weather"><h3>Weather Holds</h3><p class="metric-value">--</p><small>Missions paused for weather clearance.</small></article>
+          <article id="kpi-crew" class="kpi-card kpi-card--crew"><h3>Crew Conflicts</h3><p class="metric-value">--</p><small>Potential crew and drone overlap cases.</small></article>
+          <article id="kpi-wildlife" class="kpi-card kpi-card--wildlife"><h3>Wildlife Reviews</h3><p class="metric-value">--</p><small>Missions pending environmental review.</small></article>
         </div>
       </section>
 
       <section id="operations-workspace" aria-label="Upper operations workspace">
         <section id="weather-map-panel" class="panel" aria-label="Weather and map workspace">
           <h2>Wind Farm Operating Map</h2>
-          <p>This placeholder will show turbine markers, weather layers, route previews, and environmental overlays.</p>
-          <div aria-label="Map layer controls" role="group">
-            <button type="button">Wind</button><button type="button">Gust</button><button type="button">Temp</button>
+          <p class="header-meta">Static placeholder for turbine markers, weather layers, route previews, and environmental overlays.</p>
+          <div class="map-controls" aria-label="Map layer controls" role="group">
+            <button type="button" class="active">Wind</button><button type="button">Gust</button><button type="button">Temp</button>
             <button type="button">Precip</button><button type="button">Wildlife</button><button type="button">Crew</button>
           </div>
           <div id="map-canvas" role="img" aria-label="Static map canvas placeholder">
-            <div id="map-marker-layer">Turbine markers layer</div>
-            <div id="map-route-layer">Route layer</div>
-            <div id="map-wind-layer">Wind overlay layer</div>
-            <div id="map-environment-layer">Environmental overlay layer</div>
+            <div id="map-marker-layer" class="map-layer-label">Turbine markers layer</div>
+            <div id="map-route-layer" class="map-layer-label">Route layer</div>
+            <div id="map-wind-layer" class="map-layer-label">Wind overlay layer</div>
+            <div id="map-environment-layer" class="map-layer-label">Environmental overlay layer</div>
+            <span class="map-marker marker-clear marker-a"></span>
+            <span class="map-marker marker-caution marker-b"></span>
+            <span class="map-marker marker-blocked marker-c"></span>
+            <span class="wind-streak streak-a"></span>
+            <span class="wind-streak streak-b"></span>
+            <span class="wind-streak streak-c"></span>
+            <span class="route-line"></span>
+            <span class="environment-zone"></span>
           </div>
-          <div aria-label="Forecast timeline">
+          <div class="timeline-row" aria-label="Forecast timeline">
             <span>Now</span> <span>+1h</span> <span>+3h</span> <span>+6h</span> <span>+12h</span>
           </div>
-          <ul aria-label="Map legend placeholder">
-            <li>Clear</li>
-            <li>Caution</li>
-            <li>Blocked</li>
-            <li>In Flight</li>
+          <ul class="map-legend" aria-label="Map legend placeholder">
+            <li>Clear</li><li>Caution</li><li>Blocked</li><li>In Flight</li>
           </ul>
         </section>
 
         <section id="mission-detail-panel" class="panel" aria-label="Selected mission details">
           <h2>Selected Mission</h2>
-          <p>Select a mission row in the dispatch grid to view mission details and blockers.</p>
-          <section id="detail-mission-summary"><h3>Mission Summary</h3><p>Waiting for row selection.</p></section>
-          <section id="detail-blockers"><h3>Blockers</h3><p>Blocker details will appear here.</p></section>
-          <section id="detail-drone-telemetry"><h3>Drone Telemetry</h3><p>Telemetry placeholder.</p></section>
-          <section id="detail-inspection-imagery"><h3>Inspection Imagery</h3><p>Imagery placeholder.</p></section>
-          <section id="detail-source-systems"><h3>Source Systems</h3><p>Source provenance placeholder.</p></section>
-          <section id="detail-recommended-action"><h3>Recommended Action</h3><p>Action guidance placeholder.</p></section>
+          <section id="detail-mission-summary" class="detail-module"><h3>Mission Summary</h3><p>Waiting for row selection.</p></section>
+          <section id="detail-blockers" class="detail-module"><h3>Blockers</h3><p><span class="status-pill status-review">Pending review</span> Blocker details will appear here.</p></section>
+          <section id="detail-drone-telemetry" class="detail-module"><h3>Drone Telemetry</h3><div class="telemetry-grid"><span>Battery: --%</span><span>Signal: --</span><span>Route: --</span></div></section>
+          <section id="detail-inspection-imagery" class="detail-module"><h3>Inspection Imagery</h3><div class="imagery-strip"><div class="img-tile" aria-hidden="true"></div><div class="img-tile" aria-hidden="true"></div><div class="img-tile" aria-hidden="true"></div></div></section>
+          <section id="detail-source-systems" class="detail-module"><h3>Source Systems</h3><p><span class="source-chip">Turbine CMS</span> <span class="source-chip">Weather Forecasting System</span> <span class="source-chip">HRIS</span></p></section>
+          <section id="detail-recommended-action" class="detail-module"><h3>Recommended Action</h3><p><span class="metadata-pill">Ops recommendation</span> Action guidance placeholder.</p></section>
         </section>
       </section>
 
@@ -72,29 +80,23 @@
         <h2>Mission Filters</h2>
         <label for="filter-search">Search</label>
         <input id="filter-search" name="filter-search" type="search" placeholder="Search turbine, site, operator, or drone" />
-
         <label for="filter-site">Site</label>
         <select id="filter-site" name="filter-site"><option>All</option></select>
-
         <label for="filter-priority">Priority</label>
         <select id="filter-priority" name="filter-priority"><option>All</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
-
         <label for="filter-weather">Weather Clearance</label>
         <select id="filter-weather" name="filter-weather"><option>All</option><option>Clear</option><option>Caution</option><option>Hold</option></select>
-
         <label for="filter-safety">Safety Status</label>
         <select id="filter-safety" name="filter-safety"><option>All</option><option>Clear</option><option>Weather Hold</option><option>Crew Conflict</option><option>Certification Missing</option><option>Battery Low</option><option>Wildlife Review</option><option>Route Review</option><option>Blocked</option></select>
-
         <label for="filter-mission">Mission Status</label>
         <select id="filter-mission" name="filter-mission"><option>All</option><option>Ready</option><option>Needs Review</option><option>Blocked</option><option>Scheduled</option><option>In Flight</option><option>Completed</option></select>
-
         <button id="filter-reset" type="reset">Reset Filters</button>
       </form>
 
       <section id="dispatch-grid-section" class="panel" aria-label="Dispatch grid shell">
         <h2>Drone Inspection Dispatch Grid</h2>
         <p>This grid will show mission readiness, source-system data, blockers, and dispatch actions.</p>
-        <div role="region" aria-label="Dispatch grid table wrapper" tabindex="0">
+        <div class="grid-wrap" role="region" aria-label="Dispatch grid table wrapper" tabindex="0">
           <table id="dispatch-grid">
             <thead>
               <tr>

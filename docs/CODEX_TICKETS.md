@@ -12,7 +12,7 @@
 1. DFMS-P0-002 — User stories and acceptance criteria documentation. (completed)
 2. DFMS-P0-003 — Data model and realistic sample dataset. (completed)
 3. DFMS-P0-004 — Base HTML layout. (completed)
-4. DFMS-P0-005 — Command-center visual system.
+4. DFMS-P0-005 — Command-center visual system. (completed)
 5. DFMS-P0-006 — Dynamic dispatch grid rendering.
 6. DFMS-P0-007 — Search and filters.
 7. DFMS-P0-008 — Editable planning fields.
