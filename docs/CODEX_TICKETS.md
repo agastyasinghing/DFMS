@@ -9,7 +9,7 @@
 
 > This plan is tentative and may expand or change as implementation progresses.
 
-1. DFMS-P0-002 — User stories and acceptance criteria documentation.
+1. DFMS-P0-002 — User stories and acceptance criteria documentation. (completed)
 2. DFMS-P0-003 — Data model and realistic sample dataset.
 3. DFMS-P0-004 — Base HTML layout.
 4. DFMS-P0-005 — Command-center visual system.
