@@ -78,7 +78,7 @@
       safetyStatus: 'Wildlife Review',
       label: 'Wildlife Review',
       message: 'Wildlife risk is high and requires analyst review.',
-      severity: 'soft',
+      severity: 'review',
       source: 'Environmental Layer'
     },
     route: {
@@ -86,7 +86,7 @@
       safetyStatus: 'Route Review',
       label: 'Route Review',
       message: 'Route intersects a restricted or review-required area.',
-      severity: 'soft',
+      severity: 'review',
       source: 'Environmental Layer'
     }
   };
@@ -245,7 +245,7 @@
     if (typeof mission.droneBatteryPercent === 'number' && mission.droneBatteryPercent < 30) blockers.push(BLOCKER_DEFINITIONS.battery);
     if (!mission.assignedOperatorId || mission.assignedOperatorId === 'OP-999' || mission.operatorName === 'Unassigned') blockers.push(BLOCKER_DEFINITIONS.certification);
     if (mission.wildlifeRisk === 'High') blockers.push(BLOCKER_DEFINITIONS.wildlife);
-    if (!mission.flightPath || mission.flightPath.restrictedAreaOverlap === true) blockers.push(BLOCKER_DEFINITIONS.route);
+    if (routeNeedsReview(mission.flightPath)) blockers.push(BLOCKER_DEFINITIONS.route);
 
     return blockers.filter(function (blocker, index, all) {
       return all.findIndex(function (entry) { return entry.code === blocker.code; }) === index;
@@ -257,15 +257,24 @@
     return blockers[0].safetyStatus;
   }
 
+  function routeNeedsReview(flightPath) {
+    if (!flightPath) return true;
+
+    var status = String(flightPath.status || '');
+    return flightPath.restrictedAreaOverlap === true
+      || status.indexOf('Review') !== -1
+      || status.indexOf('Missing') !== -1;
+  }
+
   function enforceMissionStatus(mission, blockers) {
     var hasHardBlocker = blockers.some(function (blocker) { return blocker.severity === 'hard'; });
-    var hasSoftBlocker = blockers.some(function (blocker) { return blocker.severity === 'soft'; });
+    var hasReviewBlocker = blockers.some(function (blocker) { return blocker.severity === 'review'; });
 
     if (hasHardBlocker && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled')) {
       mission.missionStatus = 'Blocked';
       return;
     }
-    if (!hasHardBlocker && hasSoftBlocker && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled')) {
+    if (!hasHardBlocker && hasReviewBlocker && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled')) {
       mission.missionStatus = 'Needs Review';
     }
   }
@@ -278,7 +287,7 @@
     mission.blockers = blockers;
     mission.safetyStatus = getPrimarySafetyStatus(blockers);
     mission.hasHardBlocker = blockers.some(function (blocker) { return blocker.severity === 'hard'; });
-    mission.requiresReview = !mission.hasHardBlocker && blockers.some(function (blocker) { return blocker.severity === 'soft'; });
+    mission.requiresReview = !mission.hasHardBlocker && blockers.some(function (blocker) { return blocker.severity === 'review'; });
     mission.isDispatchable = mission.safetyStatus === 'Clear' && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled');
     mission.ruleSummary = blockers.length
       ? blockers.map(function (blocker) { return blocker.label; }).join(' · ')
@@ -416,7 +425,7 @@
       actionButton.textContent = actionLabel;
 
       if (actionLabel === 'Schedule') actionButton.classList.add('action-button--primary');
-      if (actionLabel === 'Blocked') actionButton.classList.add('action-button--blocked');
+      if (mission.hasHardBlocker || actionLabel === 'Blocked') actionButton.classList.add('action-button--blocked');
       if (actionLabel === 'Review' || actionLabel === 'Review Route') actionButton.classList.add('action-button--review');
 
       actionCell.appendChild(actionButton);
@@ -667,7 +676,7 @@
 
     state.missions.forEach(function (mission) {
       if (mission.missionStatus === 'Ready' && mission.safetyStatus === 'Clear') counts.ready += 1;
-      if (mission.missionStatus === 'Blocked' || mission.safetyStatus === 'Blocked') counts.blocked += 1;
+      if (mission.missionStatus === 'Blocked' || mission.safetyStatus === 'Blocked' || mission.hasHardBlocker === true) counts.blocked += 1;
       if (mission.priority === 'Critical') counts.critical += 1;
       if (mission.safetyStatus === 'Weather Hold' || mission.weatherClearance === 'Hold') counts.weather += 1;
       if (mission.safetyStatus === 'Crew Conflict' || mission.crewOnsite === true) counts.crew += 1;
