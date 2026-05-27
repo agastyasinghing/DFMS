@@ -726,8 +726,18 @@
     return 'Prototype recommendation: review mission blockers and planning fields.';
   }
 
+  function escapeHtml(value) {
+    if (value == null) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function renderField(label, value) {
-    return '<div class="detail-field"><span class="detail-field-label">' + label + '</span><span class="detail-field-value">' + (value == null || value === '' ? '—' : value) + '</span></div>';
+    return '<div class="detail-field"><span class="detail-field-label">' + escapeHtml(label) + '</span><span class="detail-field-value">' + escapeHtml(value == null || value === '' ? '—' : value) + '</span></div>';
   }
 
   function renderMissionDetail() {
@@ -756,11 +766,11 @@
     var actionLabel = getActionLabel(mission);
 
     summaryEl.innerHTML = '<h3>Mission Summary</h3>'
-      + '<div class="detail-header"><div class="detail-title-row"><strong>Turbine ' + mission.turbineId + ' · ' + mission.siteName + '</strong><span>' + mission.region + '</span></div>'
-      + '<div class="detail-pill-row"><span class="status-pill ' + getPriorityClass(mission.priority) + '">Priority: ' + mission.priority + '</span> '
-      + '<span class="status-pill ' + getStatusClass(mission.safetyStatus) + '">Safety: ' + mission.safetyStatus + '</span> '
-      + '<span class="status-pill ' + getStatusClass(mission.missionStatus) + '">Mission: ' + mission.missionStatus + '</span> '
-      + '<span class="metadata-pill">Action: ' + actionLabel + '</span></div></div>'
+      + '<div class="detail-header"><div class="detail-title-row"><strong>Turbine ' + escapeHtml(mission.turbineId) + ' · ' + escapeHtml(mission.siteName) + '</strong><span>' + escapeHtml(mission.region) + '</span></div>'
+      + '<div class="detail-pill-row"><span class="status-pill ' + getPriorityClass(mission.priority) + '">Priority: ' + escapeHtml(mission.priority) + '</span> '
+      + '<span class="status-pill ' + getStatusClass(mission.safetyStatus) + '">Safety: ' + escapeHtml(mission.safetyStatus) + '</span> '
+      + '<span class="status-pill ' + getStatusClass(mission.missionStatus) + '">Mission: ' + escapeHtml(mission.missionStatus) + '</span> '
+      + '<span class="metadata-pill">Action: ' + escapeHtml(actionLabel) + '</span></div></div>'
       + (hiddenByFilter ? '<p class="detail-filter-note">Selected mission is hidden by current grid filters.</p>' : '')
       + '<div class="detail-grid">'
       + renderField('Mission ID', mission.missionId)
@@ -777,13 +787,13 @@
 
     var blockers = mission.blockers || [];
     blockersEl.innerHTML = '<h3>Blockers</h3>' + (blockers.length ? '<div class="blocker-detail-list">' + blockers.map(function (b) {
-      return '<article class="blocker-detail-card blocker-detail-card--' + b.severity + '"><strong>' + b.label + '</strong><div>Severity: ' + b.severity + '</div><div>' + b.message + '</div><small>Source: ' + b.source + '</small></article>';
+      return '<article class="blocker-detail-card blocker-detail-card--' + escapeHtml(b.severity) + '"><strong>' + escapeHtml(b.label) + '</strong><div>Severity: ' + escapeHtml(b.severity) + '</div><div>' + escapeHtml(b.message) + '</div><small>Source: ' + escapeHtml(b.source) + '</small></article>';
     }).join('') + '</div>' : '<p>No active prototype blockers detected.</p>');
 
     telemetryEl.innerHTML = '<h3>Drone Telemetry</h3><p class="cell-muted">Static demo telemetry.</p><div class="telemetry-grid">'
       + renderField('Assigned drone', mission.assignedDroneLabel)
       + renderField('Drone ID', mission.assignedDroneId || 'Unassigned')
-      + renderField('Drone model', drone && drone.model ? drone.model : '—')
+      + renderField('Drone model', drone && drone.modelName ? drone.modelName : '—')
       + renderField('Battery', formatBattery(mission.droneBatteryPercent))
       + renderField('Signal', drone && drone.signalStrength ? drone.signalStrength : '—')
       + renderField('Payload', drone && drone.payload ? drone.payload : '—')
@@ -797,16 +807,16 @@
       + '</div>';
 
     var images = Array.isArray(mission.inspectionImages) ? mission.inspectionImages : [];
-    imageryEl.innerHTML = '<h3>Inspection Imagery</h3><p><span class="metadata-pill">' + mission.imageryStatus + '</span> <span class="metadata-pill">Count: ' + mission.imageCount + '</span></p>' + (images.length ? '<div class="inspection-tile-grid">' + images.map(function (img) {
-      return '<article class="inspection-tile"><div class="inspection-thumbnail" aria-hidden="true"></div><div class="detail-field-value">' + img.label + '</div><small>Status: ' + img.status + '</small><small>Finding: ' + img.finding + '</small></article>';
+    imageryEl.innerHTML = '<h3>Inspection Imagery</h3><p><span class="metadata-pill">' + escapeHtml(mission.imageryStatus) + '</span> <span class="metadata-pill">Count: ' + escapeHtml(mission.imageCount) + '</span></p>' + (images.length ? '<div class="inspection-tile-grid">' + images.map(function (img) {
+      return '<article class="inspection-tile"><div class="inspection-thumbnail" aria-hidden="true"></div><div class="detail-field-value">' + escapeHtml(img.label) + '</div><small>Status: ' + escapeHtml(img.status) + '</small><small>Finding: ' + escapeHtml(img.finding) + '</small></article>';
     }).join('') + '</div>' : '<p>No imagery available.</p>');
 
     var sources = mission.sourceSystems || [];
     sourcesEl.innerHTML = '<h3>Source Systems</h3><div class="source-system-grid">' + sources.map(function (source) {
-      return '<article class="source-system-card"><strong>' + source + '</strong><small>Last sync: ' + formatDateTime(mission.lastSync) + ' UTC</small><small>Simulated static demo source.</small></article>';
+      return '<article class="source-system-card"><strong>' + escapeHtml(source) + '</strong><small>Last sync: ' + escapeHtml(formatDateTime(mission.lastSync)) + ' UTC</small><small>Simulated static demo source.</small></article>';
     }).join('') + '</div>';
 
-    recommendationEl.innerHTML = '<h3>Recommended Action</h3><div class="recommendation-card"><strong>' + actionLabel + '</strong><p>' + getRecommendationText(mission) + '</p><small>Prototype rule check only. No real flight approval.</small></div>';
+    recommendationEl.innerHTML = '<h3>Recommended Action</h3><div class="recommendation-card"><strong>' + escapeHtml(actionLabel) + '</strong><p>' + escapeHtml(getRecommendationText(mission)) + '</p><small>Prototype rule check only. No real flight approval.</small></div>';
   }
 
   function selectMission(missionId, source) {
