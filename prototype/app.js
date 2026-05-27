@@ -693,7 +693,7 @@
       if (marker) {
         state.map.focusedMissionId = marker.getAttribute('data-map-mission-id');
         renderMapPanel();
-        var focusedRow = document.querySelector('#dispatch-grid-body .mission-row[data-mission-id= + state.map.focusedMissionId + ]');
+        var focusedRow = document.querySelector('#dispatch-grid-body .mission-row[data-mission-id="' + state.map.focusedMissionId + '"]');
         if (focusedRow && typeof focusedRow.scrollIntoView === 'function') focusedRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     });
