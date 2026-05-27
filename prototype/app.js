@@ -37,7 +37,12 @@
     filteredMissions: [],
     selectedMissionId: null,
     filters: Object.assign({}, DEFAULT_FILTERS),
-    editedMissionIds: new Set()
+    editedMissionIds: new Set(),
+    map: {
+      activeLayer: 'Wind',
+      activeTimeline: 'Now',
+      focusedMissionId: null
+    }
   };
 
   var BLOCKER_DEFINITIONS = {
@@ -355,6 +360,7 @@
     missionsToRender.forEach(function (mission) {
       var row = document.createElement('tr');
       row.classList.add('mission-row');
+      row.setAttribute('data-mission-id', mission.missionId);
 
       if (state.editedMissionIds.has(mission.missionId)) row.classList.add('mission-row--edited');
       if (mission.missionStatus === 'Blocked' || mission.safetyStatus === 'Blocked') row.classList.add('mission-row--blocked');
@@ -526,6 +532,172 @@
       : 'Demo edits: ' + count + ' mission(s) changed this session (in-memory only).';
   }
 
+
+
+  function getMapElements() {
+    return {
+      panel: document.getElementById('weather-map-panel'),
+      canvas: document.getElementById('map-canvas'),
+      markerLayer: document.getElementById('map-marker-layer'),
+      routeLayer: document.getElementById('map-route-layer'),
+      layerControls: document.getElementById('map-layer-controls'),
+      timeline: document.getElementById('map-timeline-controls'),
+      summary: document.getElementById('map-status-summary')
+    };
+  }
+
+
+
+  function getMissionLocation(mission) {
+    if (!mission || !mission.turbineLocation) return null;
+    var location = mission.turbineLocation;
+    return typeof location.lat === 'number' && typeof location.lon === 'number'
+      ? location
+      : null;
+  }
+
+  function syncFocusedGridRow(missionId) {
+    var rows = document.querySelectorAll('#dispatch-grid-body .mission-row[data-mission-id]');
+    Array.prototype.forEach.call(rows, function (row) {
+      row.classList.toggle('mission-row--map-focused', missionId && row.getAttribute('data-mission-id') === missionId);
+    });
+  }
+
+  function getMapBounds(missions) {
+    var coords = missions
+      .map(getMissionLocation)
+      .filter(Boolean);
+
+    if (!coords.length) {
+      return { minLat: 0, maxLat: 1, minLon: 0, maxLon: 1 };
+    }
+
+    return coords.reduce(function (acc, coordinates) {
+      acc.minLat = Math.min(acc.minLat, coordinates.lat);
+      acc.maxLat = Math.max(acc.maxLat, coordinates.lat);
+      acc.minLon = Math.min(acc.minLon, coordinates.lon);
+      acc.maxLon = Math.max(acc.maxLon, coordinates.lon);
+      return acc;
+    }, { minLat: coords[0].lat, maxLat: coords[0].lat, minLon: coords[0].lon, maxLon: coords[0].lon });
+  }
+
+  function normalizeMissionPosition(mission, bounds) {
+    var location = getMissionLocation(mission);
+    if (!location) return { left: 50, top: 50 };
+    var lonSpan = Math.max(bounds.maxLon - bounds.minLon, 0.01);
+    var latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.01);
+    var left = ((location.lon - bounds.minLon) / lonSpan) * 80 + 10;
+    var top = (1 - ((location.lat - bounds.minLat) / latSpan)) * 72 + 14;
+    return { left: Math.max(8, Math.min(92, left)), top: Math.max(8, Math.min(88, top)) };
+  }
+
+  function getMarkerStatusClass(mission) {
+    if (mission.missionStatus === 'In Flight') return 'map-marker--in-flight';
+    if (mission.missionStatus === 'Completed') return 'map-marker--completed';
+    if (mission.hasHardBlocker || mission.missionStatus === 'Blocked') return 'map-marker--blocked';
+    if (mission.requiresReview || mission.missionStatus === 'Needs Review') return 'map-marker--review';
+    if (mission.weatherClearance === 'Caution') return 'map-marker--caution';
+    return 'map-marker--clear';
+  }
+
+  function renderMapPanel() {
+    var elements = getMapElements();
+    if (!elements.canvas || !elements.markerLayer) return;
+
+    clearElement(elements.markerLayer);
+    clearElement(elements.routeLayer);
+
+    var visibleMissions = state.filteredMissions.slice();
+    if (state.map.focusedMissionId && !visibleMissions.some(function (mission) { return mission.missionId === state.map.focusedMissionId; })) {
+      state.map.focusedMissionId = null;
+    }
+
+    var focused = state.missions.find(function (mission) { return mission.missionId === state.map.focusedMissionId; }) || visibleMissions[0] || null;
+    var bounds = getMapBounds(visibleMissions.length ? visibleMissions : state.missions);
+
+    visibleMissions.forEach(function (mission) {
+      var marker = document.createElement('button');
+      var pos = normalizeMissionPosition(mission, bounds);
+      marker.type = 'button';
+      marker.className = 'map-marker ' + getMarkerStatusClass(mission);
+      marker.style.left = pos.left + '%';
+      marker.style.top = pos.top + '%';
+      marker.setAttribute('data-map-mission-id', mission.missionId);
+      marker.setAttribute('data-mission-id', mission.missionId);
+      marker.setAttribute('aria-label', 'Demo marker ' + mission.turbineId + ' at ' + mission.siteName);
+      marker.title = mission.turbineId + ' · ' + mission.siteName + ' · ' + mission.safetyStatus;
+      if (focused && focused.missionId === mission.missionId) marker.classList.add('map-marker--selected');
+      elements.markerLayer.appendChild(marker);
+    });
+
+    if (focused && elements.routeLayer) {
+      var route = document.createElement('div');
+      route.className = 'map-route-preview';
+      var label = document.createElement('p');
+      label.className = 'map-route-label';
+      if (focused.requiresReview || (focused.flightPath && focused.flightPath.restrictedAreaOverlap === true)) route.classList.add('map-route-preview--review');
+      var routeName = focused.flightPath && focused.flightPath.routeName ? focused.flightPath.routeName : 'No route metadata';
+      var routeStatus = focused.flightPath && focused.flightPath.status ? focused.flightPath.status : 'Unknown';
+      var routePreviewLabel = focused.flightPath && focused.flightPath.routePreviewLabel ? focused.flightPath.routePreviewLabel : 'Static demo route';
+      var waypointCount = focused.flightPath && typeof focused.flightPath.waypoints === 'number' ? focused.flightPath.waypoints + ' wp' : 'wp n/a';
+      label.textContent = routePreviewLabel + ' · ' + routeName + ' · ' + routeStatus + ' · ' + waypointCount + ' · No live weather feed';
+      elements.routeLayer.appendChild(route);
+      elements.routeLayer.appendChild(label);
+    }
+
+    if (elements.layerControls) {
+      Array.prototype.forEach.call(elements.layerControls.querySelectorAll('[data-map-layer]'), function (button) {
+        button.classList.toggle('is-active', button.getAttribute('data-map-layer') === state.map.activeLayer);
+      });
+    }
+
+    if (elements.timeline) {
+      Array.prototype.forEach.call(elements.timeline.querySelectorAll('[data-map-time]'), function (button) {
+        button.classList.toggle('is-active', button.getAttribute('data-map-time') === state.map.activeTimeline);
+      });
+    }
+
+    syncFocusedGridRow(focused ? focused.missionId : null);
+
+    if (elements.summary) {
+      elements.summary.textContent = 'Prototype map layer: ' + state.map.activeLayer + ' · Timeline: ' + state.map.activeTimeline
+        + ' · Visible markers: ' + visibleMissions.length + ' of ' + state.missions.length
+        + (focused ? ' · Focused mission: ' + focused.turbineId : ' · Focused mission: none');
+    }
+
+    if (elements.canvas) {
+      var layerClasses = ['map-canvas--layer-wind','map-canvas--layer-gust','map-canvas--layer-temp','map-canvas--layer-precip','map-canvas--layer-wildlife','map-canvas--layer-crew'];
+      elements.canvas.classList.remove.apply(elements.canvas.classList, layerClasses);
+      elements.canvas.classList.add('map-canvas--layer-' + state.map.activeLayer.toLowerCase());
+    }
+  }
+
+  function bindMapEvents() {
+    var elements = getMapElements();
+    if (!elements.panel) return;
+
+    elements.panel.addEventListener('click', function (event) {
+      var layerButton = event.target.closest('[data-map-layer]');
+      if (layerButton) {
+        state.map.activeLayer = layerButton.getAttribute('data-map-layer');
+        renderMapPanel();
+      }
+
+      var timelineButton = event.target.closest('[data-map-time]');
+      if (timelineButton) {
+        state.map.activeTimeline = timelineButton.getAttribute('data-map-time');
+        renderMapPanel();
+      }
+
+      var marker = event.target.closest('[data-map-mission-id]');
+      if (marker) {
+        state.map.focusedMissionId = marker.getAttribute('data-map-mission-id');
+        renderMapPanel();
+        var focusedRow = document.querySelector('#dispatch-grid-body .mission-row[data-mission-id="' + state.map.focusedMissionId + '"]');
+        if (focusedRow && typeof focusedRow.scrollIntoView === 'function') focusedRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    });
+  }
   function applyFilters() {
     state.filters = readFiltersFromControls();
     state.filteredMissions = state.missions.filter(function (mission) {
@@ -535,6 +707,7 @@
     renderDispatchGrid(state.filteredMissions);
     renderResultSummary(state.missions.length, state.filteredMissions.length);
     updateEditSessionSummary();
+    renderMapPanel();
   }
 
   function populateFilterOptions() {
@@ -637,6 +810,7 @@
     recomputeAllMissionRules();
     applyFilters();
     updateKpis();
+    renderMapPanel();
   }
 
   function handleGridEdit(event) {
@@ -735,12 +909,14 @@
       renderResultSummary(0, 0);
       updateKpis();
       updateSyncStatus();
+      renderMapPanel();
       return;
     }
 
     populateFilterOptions();
     bindFilterEvents();
     bindGridEditEvents();
+    bindMapEvents();
     recomputeAllMissionRules();
     applyFilters();
     updateKpis();

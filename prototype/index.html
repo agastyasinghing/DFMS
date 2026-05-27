@@ -38,31 +38,28 @@
       <section id="operations-workspace" aria-label="Upper operations workspace">
         <section id="weather-map-panel" class="panel" aria-label="Weather and map workspace">
           <h2>Wind Farm Operating Map</h2>
-          <p class="header-meta">Static placeholder for turbine markers, weather layers, route previews, and environmental overlays.</p>
-          <div class="map-controls" aria-label="Map layer controls" role="group">
-            <button type="button" class="active">Wind</button><button type="button">Gust</button><button type="button">Temp</button>
-            <button type="button">Precip</button><button type="button">Wildlife</button><button type="button">Crew</button>
+          <p class="header-meta">Prototype map layer controls and demo mission markers (no live weather feed or map tiles).</p>
+          <div id="map-layer-controls" class="map-controls" aria-label="Map layer controls" role="group">
+            <button type="button" class="map-control-button is-active" data-map-layer="Wind">Wind</button><button type="button" class="map-control-button" data-map-layer="Gust">Gust</button><button type="button" class="map-control-button" data-map-layer="Temp">Temp</button>
+            <button type="button" class="map-control-button" data-map-layer="Precip">Precip</button><button type="button" class="map-control-button" data-map-layer="Wildlife">Wildlife</button><button type="button" class="map-control-button" data-map-layer="Crew">Crew</button>
           </div>
-          <div id="map-canvas" role="img" aria-label="Static map canvas placeholder">
-            <div id="map-marker-layer" class="map-layer-label">Turbine markers layer</div>
-            <div id="map-route-layer" class="map-layer-label">Route layer</div>
+          <div id="map-canvas" role="img" aria-label="Prototype static map canvas">
+            <div id="map-marker-layer" aria-label="Prototype mission markers"></div>
+            <div id="map-route-layer" aria-label="Static demo route layer"></div>
             <div id="map-wind-layer" class="map-layer-label">Wind overlay layer</div>
             <div id="map-environment-layer" class="map-layer-label">Environmental overlay layer</div>
-            <span class="map-marker marker-clear marker-a"></span>
-            <span class="map-marker marker-caution marker-b"></span>
-            <span class="map-marker marker-blocked marker-c"></span>
-            <span class="wind-streak streak-a"></span>
-            <span class="wind-streak streak-b"></span>
-            <span class="wind-streak streak-c"></span>
-            <span class="route-line"></span>
-            <span class="environment-zone"></span>
+                        <span class="wind-streak streak-a" aria-hidden="true"></span>
+            <span class="wind-streak streak-b" aria-hidden="true"></span>
+            <span class="wind-streak streak-c" aria-hidden="true"></span>
+            <span class="environment-zone" aria-hidden="true"></span>
           </div>
-          <div class="timeline-row" aria-label="Forecast timeline">
-            <span>Now</span> <span>+1h</span> <span>+3h</span> <span>+6h</span> <span>+12h</span>
+          <div id="map-timeline-controls" class="timeline-row" aria-label="Forecast timeline">
+            <button type="button" class="forecast-chip is-active" data-map-time="Now">Now</button> <button type="button" class="forecast-chip" data-map-time="+1h">+1h</button> <button type="button" class="forecast-chip" data-map-time="+3h">+3h</button> <button type="button" class="forecast-chip" data-map-time="+6h">+6h</button> <button type="button" class="forecast-chip" data-map-time="+12h">+12h</button>
           </div>
           <ul class="map-legend" aria-label="Map legend placeholder">
-            <li>Clear</li><li>Caution</li><li>Blocked</li><li>In Flight</li>
+            <li>Clear</li><li>Caution / Review</li><li>Blocked</li><li>In Flight</li>
           </ul>
+          <p id="map-status-summary" class="map-summary" aria-live="polite">Prototype map layer: Wind · Timeline: Now · Visible markers: 0 of 0 · Focused mission: none</p>
         </section>
 
         <section id="mission-detail-panel" class="panel" aria-label="Selected mission details">
