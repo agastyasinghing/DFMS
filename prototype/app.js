@@ -260,10 +260,10 @@
   function routeNeedsReview(flightPath) {
     if (!flightPath) return true;
 
-    var status = String(flightPath.status || '');
+    var status = String(flightPath.status || '').toLowerCase();
     return flightPath.restrictedAreaOverlap === true
-      || status.indexOf('Review') !== -1
-      || status.indexOf('Missing') !== -1;
+      || status.indexOf('review') !== -1
+      || status.indexOf('missing') !== -1;
   }
 
   function enforceMissionStatus(mission, blockers) {
@@ -287,7 +287,7 @@
     mission.blockers = blockers;
     mission.safetyStatus = getPrimarySafetyStatus(blockers);
     mission.hasHardBlocker = blockers.some(function (blocker) { return blocker.severity === 'hard'; });
-    mission.requiresReview = !mission.hasHardBlocker && blockers.some(function (blocker) { return blocker.severity === 'review'; });
+    mission.requiresReview = blockers.some(function (blocker) { return blocker.severity === 'review'; });
     mission.isDispatchable = mission.safetyStatus === 'Clear' && (mission.missionStatus === 'Ready' || mission.missionStatus === 'Scheduled');
     mission.ruleSummary = blockers.length
       ? blockers.map(function (blocker) { return blocker.label; }).join(' · ')
