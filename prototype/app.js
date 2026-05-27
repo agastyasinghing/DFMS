@@ -369,6 +369,7 @@
       if (mission.missionStatus === 'Needs Review') row.classList.add('mission-row--review');
       if (mission.missionStatus === 'In Flight') row.classList.add('mission-row--in-flight');
       if (mission.missionStatus === 'Completed') row.classList.add('mission-row--completed');
+      if (state.selectedMissionId === mission.missionId) row.classList.add('mission-row--selected');
 
       row.appendChild(createCell(mission.turbineId, 'cell-readonly'));
       row.appendChild(createCell(mission.siteName, 'cell-readonly'));
@@ -624,7 +625,7 @@
       marker.style.top = pos.top + '%';
       marker.setAttribute('data-map-mission-id', mission.missionId);
       marker.setAttribute('data-mission-id', mission.missionId);
-      marker.setAttribute('aria-label', 'Demo marker ' + mission.turbineId + ' at ' + mission.siteName);
+      marker.setAttribute('aria-label', 'Turbine ' + mission.turbineId + ' at ' + mission.siteName + ', ' + mission.missionStatus + ', ' + mission.safetyStatus);
       marker.title = mission.turbineId + ' · ' + mission.siteName + ' · ' + mission.safetyStatus;
       if (focused && focused.missionId === mission.missionId) marker.classList.add('map-marker--selected');
       elements.markerLayer.appendChild(marker);
@@ -692,11 +693,128 @@
       var marker = event.target.closest('[data-map-mission-id]');
       if (marker) {
         state.map.focusedMissionId = marker.getAttribute('data-map-mission-id');
+        selectMission(state.map.focusedMissionId, 'map');
         renderMapPanel();
         var focusedRow = document.querySelector('#dispatch-grid-body .mission-row[data-mission-id="' + state.map.focusedMissionId + '"]');
         if (focusedRow && typeof focusedRow.scrollIntoView === 'function') focusedRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     });
+  }
+
+
+  function getMissionById(missionId) {
+    return state.missions.find(function (mission) { return mission.missionId === missionId; }) || null;
+  }
+
+  function syncSelectedGridRow() {
+    var rows = document.querySelectorAll('#dispatch-grid-body .mission-row[data-mission-id]');
+    Array.prototype.forEach.call(rows, function (row) {
+      row.classList.toggle('mission-row--selected', state.selectedMissionId && row.getAttribute('data-mission-id') === state.selectedMissionId);
+    });
+  }
+
+  function getRecommendationText(mission) {
+    var action = getActionLabel(mission);
+    if (mission.missionStatus === 'Completed') return 'Prototype recommendation: view findings and prepare maintenance follow-up summary.';
+    if (mission.missionStatus === 'In Flight') return 'Prototype recommendation: monitor mission telemetry and keep crew corridor clear.';
+    if (mission.safetyStatus === 'Crew Conflict') return 'Prototype recommendation: coordinate crew clearance before dispatch.';
+    if (mission.safetyStatus === 'Weather Hold') return 'Prototype recommendation: wait for a safer wind and weather window.';
+    if (mission.safetyStatus === 'Certification Missing') return 'Prototype recommendation: assign a certified Remote Pilot before dispatch.';
+    if (mission.safetyStatus === 'Battery Low') return 'Prototype recommendation: swap drone or recharge battery before dispatch.';
+    if (mission.safetyStatus === 'Wildlife Review' || mission.safetyStatus === 'Route Review') return 'Prototype recommendation: review route and environmental layer before scheduling.';
+    if (action === 'Schedule') return 'Prototype recommendation: schedule inspection in current window.';
+    return 'Prototype recommendation: review mission blockers and planning fields.';
+  }
+
+  function renderField(label, value) {
+    return '<div class="detail-field"><span class="detail-field-label">' + label + '</span><span class="detail-field-value">' + (value == null || value === '' ? '—' : value) + '</span></div>';
+  }
+
+  function renderMissionDetail() {
+    var panel = document.getElementById('mission-detail-panel');
+    var summaryEl = document.getElementById('detail-mission-summary');
+    var blockersEl = document.getElementById('detail-blockers');
+    var telemetryEl = document.getElementById('detail-drone-telemetry');
+    var imageryEl = document.getElementById('detail-inspection-imagery');
+    var sourcesEl = document.getElementById('detail-source-systems');
+    var recommendationEl = document.getElementById('detail-recommended-action');
+    if (!panel || !summaryEl || !blockersEl || !telemetryEl || !imageryEl || !sourcesEl || !recommendationEl) return;
+
+    var mission = getMissionById(state.selectedMissionId);
+    if (!mission) {
+      summaryEl.innerHTML = '<h3>Mission Summary</h3><p>Select a mission from the grid or map.</p><p class="cell-muted">Static demo detail panel. No live drone feed.</p>';
+      blockersEl.innerHTML = '<h3>Blockers</h3><p>—</p>';
+      telemetryEl.innerHTML = '<h3>Drone Telemetry</h3><p>Static demo telemetry.</p>';
+      imageryEl.innerHTML = '<h3>Inspection Imagery</h3><p>No imagery available.</p>';
+      sourcesEl.innerHTML = '<h3>Source Systems</h3><p>Simulated source metadata appears after mission selection.</p>';
+      recommendationEl.innerHTML = '<h3>Recommended Action</h3><p class="recommendation-card">Prototype recommendation unavailable until a mission is selected.<br><small>Prototype rule check only. No real flight approval.</small></p>';
+      return;
+    }
+
+    var hiddenByFilter = !state.filteredMissions.some(function (m) { return m.missionId === mission.missionId; });
+    var drone = findDroneById(mission.assignedDroneId);
+    var actionLabel = getActionLabel(mission);
+
+    summaryEl.innerHTML = '<h3>Mission Summary</h3>'
+      + '<div class="detail-header"><div class="detail-title-row"><strong>Turbine ' + mission.turbineId + ' · ' + mission.siteName + '</strong><span>' + mission.region + '</span></div>'
+      + '<div class="detail-pill-row"><span class="status-pill ' + getPriorityClass(mission.priority) + '">Priority: ' + mission.priority + '</span> '
+      + '<span class="status-pill ' + getStatusClass(mission.safetyStatus) + '">Safety: ' + mission.safetyStatus + '</span> '
+      + '<span class="status-pill ' + getStatusClass(mission.missionStatus) + '">Mission: ' + mission.missionStatus + '</span> '
+      + '<span class="metadata-pill">Action: ' + actionLabel + '</span></div></div>'
+      + (hiddenByFilter ? '<p class="detail-filter-note">Selected mission is hidden by current grid filters.</p>' : '')
+      + '<div class="detail-grid">'
+      + renderField('Mission ID', mission.missionId)
+      + renderField('Turbine status', mission.turbineStatus)
+      + renderField('Last inspection', formatDateTime(mission.lastInspection))
+      + renderField('Damage severity', mission.damageSeverity)
+      + renderField('Imagery status', mission.imageryStatus)
+      + renderField('Route', (mission.flightPath && mission.flightPath.routeName ? mission.flightPath.routeName : '—') + ' · ' + (mission.flightPath && mission.flightPath.status ? mission.flightPath.status : '—'))
+      + renderField('Estimated minutes', mission.estimatedInspectionMinutes)
+      + renderField('Route miles', mission.routeDistanceMiles)
+      + renderField('Carbon savings kg', mission.carbonSavingsKg)
+      + renderField('Ops note', mission.opsNote || '—')
+      + '</div>';
+
+    var blockers = mission.blockers || [];
+    blockersEl.innerHTML = '<h3>Blockers</h3>' + (blockers.length ? '<div class="blocker-detail-list">' + blockers.map(function (b) {
+      return '<article class="blocker-detail-card blocker-detail-card--' + b.severity + '"><strong>' + b.label + '</strong><div>Severity: ' + b.severity + '</div><div>' + b.message + '</div><small>Source: ' + b.source + '</small></article>';
+    }).join('') + '</div>' : '<p>No active prototype blockers detected.</p>');
+
+    telemetryEl.innerHTML = '<h3>Drone Telemetry</h3><p class="cell-muted">Static demo telemetry.</p><div class="telemetry-grid">'
+      + renderField('Assigned drone', mission.assignedDroneLabel)
+      + renderField('Drone ID', mission.assignedDroneId || 'Unassigned')
+      + renderField('Drone model', drone && drone.model ? drone.model : '—')
+      + renderField('Battery', formatBattery(mission.droneBatteryPercent))
+      + renderField('Signal', drone && drone.signalStrength ? drone.signalStrength : '—')
+      + renderField('Payload', drone && drone.payload ? drone.payload : '—')
+      + renderField('Max safe wind', drone && drone.maxSafeWindMph ? drone.maxSafeWindMph + ' mph' : '—')
+      + renderField('Operator', mission.operatorName)
+      + renderField('Certification', mission.operatorCertification)
+      + renderField('Temp / wind', mission.temperatureF + '°F · ' + formatWind(mission))
+      + renderField('Weather clearance', mission.weatherClearance)
+      + renderField('Crew onsite', formatCrew(mission.crewOnsite))
+      + renderField('Wildlife risk', mission.wildlifeRisk)
+      + '</div>';
+
+    var images = Array.isArray(mission.inspectionImages) ? mission.inspectionImages : [];
+    imageryEl.innerHTML = '<h3>Inspection Imagery</h3><p><span class="metadata-pill">' + mission.imageryStatus + '</span> <span class="metadata-pill">Count: ' + mission.imageCount + '</span></p>' + (images.length ? '<div class="inspection-tile-grid">' + images.map(function (img) {
+      return '<article class="inspection-tile"><div class="inspection-thumbnail" aria-hidden="true"></div><div class="detail-field-value">' + img.label + '</div><small>Status: ' + img.status + '</small><small>Finding: ' + img.finding + '</small></article>';
+    }).join('') + '</div>' : '<p>No imagery available.</p>');
+
+    var sources = mission.sourceSystems || [];
+    sourcesEl.innerHTML = '<h3>Source Systems</h3><div class="source-system-grid">' + sources.map(function (source) {
+      return '<article class="source-system-card"><strong>' + source + '</strong><small>Last sync: ' + formatDateTime(mission.lastSync) + ' UTC</small><small>Simulated static demo source.</small></article>';
+    }).join('') + '</div>';
+
+    recommendationEl.innerHTML = '<h3>Recommended Action</h3><div class="recommendation-card"><strong>' + actionLabel + '</strong><p>' + getRecommendationText(mission) + '</p><small>Prototype rule check only. No real flight approval.</small></div>';
+  }
+
+  function selectMission(missionId, source) {
+    var mission = getMissionById(missionId);
+    state.selectedMissionId = mission ? mission.missionId : null;
+    if (source === 'map' && mission) state.map.focusedMissionId = mission.missionId;
+    syncSelectedGridRow();
+    renderMissionDetail();
   }
   function applyFilters() {
     state.filters = readFiltersFromControls();
@@ -708,6 +826,8 @@
     renderResultSummary(state.missions.length, state.filteredMissions.length);
     updateEditSessionSummary();
     renderMapPanel();
+    if (!state.selectedMissionId && state.filteredMissions.length) { selectMission(state.filteredMissions[0].missionId, 'initial'); }
+    else { renderMissionDetail(); syncSelectedGridRow(); }
   }
 
   function populateFilterOptions() {
@@ -811,6 +931,8 @@
     applyFilters();
     updateKpis();
     renderMapPanel();
+    if (!state.selectedMissionId && state.filteredMissions.length) { selectMission(state.filteredMissions[0].missionId, 'initial'); }
+    else { renderMissionDetail(); syncSelectedGridRow(); }
   }
 
   function handleGridEdit(event) {
@@ -829,6 +951,13 @@
   function bindGridEditEvents() {
     var gridBody = document.getElementById('dispatch-grid-body');
     if (!gridBody) return;
+
+    gridBody.addEventListener('click', function (event) {
+      var row = event.target.closest('.mission-row[data-mission-id]');
+      if (!row) return;
+      if (event.target.closest('select, input, textarea')) return;
+      selectMission(row.getAttribute('data-mission-id'), 'grid');
+    });
 
     gridBody.addEventListener('change', handleGridEdit);
     gridBody.addEventListener('input', function (event) {
@@ -910,6 +1039,7 @@
       updateKpis();
       updateSyncStatus();
       renderMapPanel();
+      renderMissionDetail();
       return;
     }
 
@@ -921,6 +1051,8 @@
     applyFilters();
     updateKpis();
     updateSyncStatus();
+    if (state.filteredMissions.length) selectMission(state.filteredMissions[0].missionId, 'initial');
+    else renderMissionDetail();
   }
 
   initialize();

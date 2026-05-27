@@ -2,7 +2,7 @@
 
 ## Current Ticket
 
-- **DFMS-P0-010 — Windy-inspired map panel**
+- **DFMS-P0-011 — DroneDeploy-inspired mission detail panel**
   - Status: completed
 
 ## Tentative Next Tickets
@@ -18,5 +18,5 @@
 7. DFMS-P0-008 — Editable planning fields. (completed)
 8. DFMS-P0-009 — Dispatch blocker/rule logic. (completed)
 9. DFMS-P0-010 — Windy-inspired map panel. (completed)
-10. DFMS-P0-011 — DroneDeploy-inspired mission detail panel.
+10. DFMS-P0-011 — DroneDeploy-inspired mission detail panel. (completed)
 11. DFMS-P0-012 — Acceptance evaluation and final polish.
