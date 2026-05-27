@@ -239,6 +239,36 @@ footer p{margin:.2rem 0;color:var(--muted-2);font-size:.82rem}
   margin-top: 6px;
 }
 
+.blocker-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.blocker-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-size: .64rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.blocker-chip--hard {
+  background: rgba(255, 95, 109, 0.2);
+  border-color: rgba(255, 95, 109, 0.55);
+  color: #ffc5cb;
+}
+
+.blocker-chip--review {
+  background: rgba(243, 182, 78, 0.2);
+  border-color: rgba(243, 182, 78, 0.55);
+  color: #ffe1ad;
+}
+
 .cell-readonly {
   color: #c4d5ef !important;
 }

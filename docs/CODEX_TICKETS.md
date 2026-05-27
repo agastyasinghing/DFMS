@@ -2,7 +2,7 @@
 
 ## Current Ticket
 
-- **DFMS-P0-008 — Editable planning fields**
+- **DFMS-P0-009 — Dispatch blocker/rule logic**
   - Status: completed
 
 ## Tentative Next Tickets
@@ -16,7 +16,7 @@
 5. DFMS-P0-006 — Dynamic dispatch grid rendering. (completed)
 6. DFMS-P0-007 — Search and filters. (completed)
 7. DFMS-P0-008 — Editable planning fields. (completed)
-8. DFMS-P0-009 — Dispatch blocker/rule logic.
+8. DFMS-P0-009 — Dispatch blocker/rule logic. (completed)
 9. DFMS-P0-010 — Windy-inspired map panel.
 10. DFMS-P0-011 — DroneDeploy-inspired mission detail panel.
 11. DFMS-P0-012 — Acceptance evaluation and final polish.
