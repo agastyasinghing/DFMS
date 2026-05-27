@@ -360,6 +360,7 @@
     missionsToRender.forEach(function (mission) {
       var row = document.createElement('tr');
       row.classList.add('mission-row');
+      row.setAttribute('data-mission-id', mission.missionId);
 
       if (state.editedMissionIds.has(mission.missionId)) row.classList.add('mission-row--edited');
       if (mission.missionStatus === 'Blocked' || mission.safetyStatus === 'Blocked') row.classList.add('mission-row--blocked');
@@ -545,10 +546,27 @@
     };
   }
 
+
+
+  function getMissionLocation(mission) {
+    if (!mission || !mission.turbineLocation) return null;
+    var location = mission.turbineLocation;
+    return typeof location.lat === 'number' && typeof location.lon === 'number'
+      ? location
+      : null;
+  }
+
+  function syncFocusedGridRow(missionId) {
+    var rows = document.querySelectorAll('#dispatch-grid-body .mission-row[data-mission-id]');
+    Array.prototype.forEach.call(rows, function (row) {
+      row.classList.toggle('mission-row--map-focused', missionId && row.getAttribute('data-mission-id') === missionId);
+    });
+  }
+
   function getMapBounds(missions) {
     var coords = missions
-      .filter(function (mission) { return mission && mission.coordinates; })
-      .map(function (mission) { return mission.coordinates; });
+      .map(getMissionLocation)
+      .filter(Boolean);
 
     if (!coords.length) {
       return { minLat: 0, maxLat: 1, minLon: 0, maxLon: 1 };
@@ -564,11 +582,12 @@
   }
 
   function normalizeMissionPosition(mission, bounds) {
-    if (!mission || !mission.coordinates) return { left: 50, top: 50 };
+    var location = getMissionLocation(mission);
+    if (!location) return { left: 50, top: 50 };
     var lonSpan = Math.max(bounds.maxLon - bounds.minLon, 0.01);
     var latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.01);
-    var left = ((mission.coordinates.lon - bounds.minLon) / lonSpan) * 80 + 10;
-    var top = (1 - ((mission.coordinates.lat - bounds.minLat) / latSpan)) * 72 + 14;
+    var left = ((location.lon - bounds.minLon) / lonSpan) * 80 + 10;
+    var top = (1 - ((location.lat - bounds.minLat) / latSpan)) * 72 + 14;
     return { left: Math.max(8, Math.min(92, left)), top: Math.max(8, Math.min(88, top)) };
   }
 
@@ -617,7 +636,11 @@
       var label = document.createElement('p');
       label.className = 'map-route-label';
       if (focused.requiresReview || (focused.flightPath && focused.flightPath.restrictedAreaOverlap === true)) route.classList.add('map-route-preview--review');
-      label.textContent = 'Static demo route · ' + focused.turbineId + ' · No live weather feed';
+      var routeName = focused.flightPath && focused.flightPath.routeName ? focused.flightPath.routeName : 'No route metadata';
+      var routeStatus = focused.flightPath && focused.flightPath.status ? focused.flightPath.status : 'Unknown';
+      var routePreviewLabel = focused.flightPath && focused.flightPath.routePreviewLabel ? focused.flightPath.routePreviewLabel : 'Static demo route';
+      var waypointCount = focused.flightPath && typeof focused.flightPath.waypoints === 'number' ? focused.flightPath.waypoints + ' wp' : 'wp n/a';
+      label.textContent = routePreviewLabel + ' · ' + routeName + ' · ' + routeStatus + ' · ' + waypointCount + ' · No live weather feed';
       elements.routeLayer.appendChild(route);
       elements.routeLayer.appendChild(label);
     }
@@ -633,6 +656,8 @@
         button.classList.toggle('is-active', button.getAttribute('data-map-time') === state.map.activeTimeline);
       });
     }
+
+    syncFocusedGridRow(focused ? focused.missionId : null);
 
     if (elements.summary) {
       elements.summary.textContent = 'Prototype map layer: ' + state.map.activeLayer + ' · Timeline: ' + state.map.activeTimeline
@@ -668,6 +693,8 @@
       if (marker) {
         state.map.focusedMissionId = marker.getAttribute('data-map-mission-id');
         renderMapPanel();
+        var focusedRow = document.querySelector('#dispatch-grid-body .mission-row[data-mission-id= + state.map.focusedMissionId + ]');
+        if (focusedRow && typeof focusedRow.scrollIntoView === 'function') focusedRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     });
   }
