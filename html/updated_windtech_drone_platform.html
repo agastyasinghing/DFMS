@@ -1,0 +1,2311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WindTech Innovations — Drone Inspection Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  :root {
+    --navy: #f0f7ec;
+    --navy-mid: #ffffff;
+    --navy-light: #e2f0da;
+    --cyan: #2e7d32;
+    --cyan-dim: #388e3c;
+    --cyan-glow: rgba(46,125,50,0.10);
+    --green: #2e7d32;
+    --green-dim: rgba(46,125,50,0.12);
+    --amber: #d4950a;
+    --amber-dim: rgba(212,149,10,0.14);
+    --red: #c0392b;
+    --red-dim: rgba(192,57,43,0.12);
+    --text-primary: #1b3a1f;
+    --text-secondary: #3a6140;
+    --text-muted: #7aab7e;
+    --border: rgba(46,125,50,0.18);
+    --border-bright: rgba(46,125,50,0.40);
+    --surface: rgba(255,255,255,0.90);
+    --surface-raised: rgba(230,245,222,0.80);
+    --yellow: #f5c800;
+    --yellow-dim: rgba(245,200,0,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text-primary);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+    background-image: linear-gradient(135deg, #f0f7ec 0%, #e8f5e1 50%, #f7faf2 100%);
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: linear-gradient(180deg, #ffffff 0%, #f5fbf0 100%);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    z-index: 10;
+  }
+  .sidebar-logo {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    color: #2e7d32;
+    letter-spacing: -0.5px;
+  }
+  .sidebar-logo .logo-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 18px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--cyan-glow); color: var(--text-primary); }
+  .nav-item.active {
+    background: var(--cyan-glow);
+    color: var(--cyan);
+    border-left-color: var(--cyan);
+    font-weight: 500;
+  }
+  .nav-item i { font-size: 16px; }
+  .nav-section-label {
+    padding: 14px 18px 4px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #7aab7e;
+  }
+  .sidebar-footer {
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(240,248,234,0.6);
+  }
+
+  /* MAIN */
+  #main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: transparent;
+  }
+  .page { display: none; padding: 28px 32px; min-height: 100vh; }
+  .page.active { position: relative; }
+  .page.active::before { content:""; display:block; height:3px; background:linear-gradient(90deg,#2e7d32,#81c784,#f5c800,#81c784,#2e7d32); margin:-28px -32px 24px; }
+  .page.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .page-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.3px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .badge-cyan { background: rgba(46,125,50,0.10); color: #2e7d32; border: 1px solid rgba(46,125,50,0.25); }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-gray { background: rgba(46,125,50,0.06); color: var(--text-muted); border: 1px solid var(--border); }
+  .badge-purple { background: rgba(212,149,10,0.12); color: #b07d08; border: 1px solid rgba(212,149,10,0.30); }
+
+  /* CARDS */
+  .card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(46,125,50,0.16);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 6px rgba(46,125,50,0.06);
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+  }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 12px; color: var(--text-secondary); font-weight: 500; letter-spacing: 0.3px; }
+  input, textarea, select {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s;
+    outline: none;
+    width: 100%;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--cyan-dim); }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); }
+  textarea { resize: vertical; min-height: 80px; }
+  select { appearance: none; cursor: pointer; }
+  select option { background: #ffffff; color: var(--text-primary); }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: 6px; border: none;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary { background: #2e7d32; color: #ffffff; }
+  .btn-primary:hover { background: #1b5e20; }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--cyan);
+  }
+  .btn-secondary:hover { background: var(--cyan-glow); }
+  .btn-ghost {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover { color: var(--text-primary); border-color: var(--border-bright); }
+  .btn-danger { background: var(--red-dim); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 6px; }
+
+  /* TURBINE LIST */
+  .turbine-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    background: rgba(240,247,236,0.9);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .turbine-row input { flex: 1; margin: 0; }
+
+  /* TRACKER */
+  .tracker { display: flex; align-items: center; gap: 0; margin: 6px 0; }
+  .tracker-step {
+    flex: 1; text-align: center; padding: 8px 4px;
+    font-size: 11px; font-weight: 500;
+    border-top: 2px solid var(--border);
+    color: var(--text-muted);
+    position: relative; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tracker-step.done { border-color: var(--green); color: var(--green); }
+  .tracker-step.active { border-color: #2e7d32; color: #2e7d32; }
+  .tracker-step.rejected { border-color: var(--red); color: var(--red); }
+  .tracker-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-muted); margin: 0 auto 4px;
+    transition: background 0.2s;
+  }
+  .tracker-step.done .tracker-dot { background: var(--green); }
+  .tracker-step.active .tracker-dot { background: #2e7d32; box-shadow: 0 0 8px rgba(46,125,50,0.5); }
+  .tracker-step.rejected .tracker-dot { background: var(--red); }
+
+  /* SUBMITTED LIST */
+  .request-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .request-item:hover { border-color: var(--border-bright); }
+  .request-item-left { display: flex; flex-direction: column; gap: 3px; }
+  .request-id { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #2e7d32; }
+  .request-meta { font-size: 12px; color: var(--text-muted); }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .data-table th:hover { color: var(--text-secondary); }
+  .data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(46,125,50,0.07);
+    color: var(--text-secondary);
+  }
+  .data-table tr:hover td { background: rgba(46,125,50,0.04); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  /* TABS */
+  .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab-btn {
+    padding: 10px 18px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); background: none; border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: #2e7d32; border-bottom-color: #2e7d32; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* FILTERS */
+  .filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-bar select, .filter-bar input { width: auto; min-width: 120px; padding: 5px 10px; font-size: 12px; }
+  .filter-label { font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+
+  /* MAP — side-tab layout */
+  .map-outer {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    height: 400px;
+    background: linear-gradient(160deg, #e8f5e1 0%, #d4edcc 50%, #c8e6bc 100%);
+  }
+  #map-container {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+  }
+  #map-svg { width: 100%; height: 100%; display: block; }
+
+  /* Side tab panels */
+  .map-side-tabs {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.95);
+    border-left: 1px solid var(--border);
+    min-width: 28px;
+    position: relative;
+  }
+  .map-side-tab-group {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .map-tab-handle {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    padding: 14px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background: rgba(240,248,234,0.9);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .map-tab-handle:hover, .map-tab-handle.open { background: rgba(46,125,50,0.10); color: var(--cyan); }
+  .map-side-panel {
+    display: none;
+    position: absolute;
+    right: 28px;
+    top: 0;
+    width: 200px;
+    background: rgba(255,255,255,0.97);
+    border-left: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 0 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    z-index: 20;
+    box-shadow: -2px 4px 14px rgba(46,125,50,0.09);
+    max-height: 100%;
+    overflow-y: auto;
+  }
+  .map-side-panel.open { display: block; }
+  .map-side-panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .key-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .map-weather-temp { font-family: 'Syne', sans-serif; font-size: 20px; color: var(--text-primary); font-weight: 700; }
+
+  /* WEATHER PAGE */
+  .weather-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 20px; }
+  .weather-day {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .weather-day:hover, .weather-day.active { border-color: #388e3c; }
+  .weather-day.active { background: rgba(46,125,50,0.08); }
+  .weather-day .wd-date { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+  .weather-day .wd-icon { font-size: 28px; margin-bottom: 6px; }
+  .weather-day .wd-temp { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+  .weather-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 14px; }
+  .weather-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .weather-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .weather-stat-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; }
+  .weather-stat-unit { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+  .weather-alert {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid;
+  }
+  .weather-alert.warning { background: var(--amber-dim); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+  .weather-alert.danger { background: var(--red-dim); border-color: rgba(239,68,68,0.3); color: var(--red); }
+  .weather-alert.good { background: var(--green-dim); border-color: rgba(34,197,94,0.3); color: var(--green); }
+  .wind-bar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .wind-bar-label { font-size: 12px; color: var(--text-muted); min-width: 30px; }
+  .wind-bar { flex: 1; height: 6px; background: rgba(46,125,50,0.10); border-radius: 3px; overflow: hidden; }
+  .wind-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .wind-val { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-secondary); min-width: 40px; text-align: right; }
+
+  /* FIELD SCHEDULE */
+  .ops-section-title {
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .ops-section-title::before { content:''; display: inline-block; width: 3px; height: 14px; border-radius: 2px; }
+  .ops-section-title.upcoming::before { background: #2e7d32; }
+  .ops-section-title.history::before { background: var(--text-muted); }
+
+  /* BIRD MIGRATION */
+  .migration-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .migration-title {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  }
+  .migration-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 10px; margin: 10px 0; }
+  .migration-detail-item { font-size: 12px; color: var(--text-muted); }
+  .migration-detail-item span { display: block; color: var(--text-secondary); font-size: 13px; margin-top: 2px; }
+  .migration-map-placeholder {
+    position: relative;
+    background: linear-gradient(160deg, #e8f5e1 0%, #d4edcc 100%);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    height: 240px;
+    overflow: hidden;
+  }
+
+  /* ROUTING SIM */
+  #sim-canvas-wrap {
+    position: relative;
+    background: linear-gradient(160deg, #eaf5e3 0%, #d8ecca 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  #sim-canvas { display: block; cursor: crosshair; }
+  .sim-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .sim-legend { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .sim-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .sim-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .drone-counter { display: flex; gap: 8px; align-items: center; }
+  .drone-tab {
+    padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+  }
+  .drone-tab.active { background: rgba(46,125,50,0.10); border-color: #388e3c; color: #2e7d32; }
+
+  /* TOOLTIP */
+  .status-tooltip {
+    position: fixed;
+    background: rgba(255,255,255,0.98);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px; color: var(--text-secondary);
+    max-width: 260px; z-index: 9999;
+    pointer-events: none; display: none;
+    box-shadow: 0 4px 16px rgba(46,125,50,0.12);
+  }
+  .status-tooltip .tooltip-title { font-weight: 600; color: var(--text-primary); margin-bottom: 4px; font-size: 13px; }
+
+  /* ROUTE CHECKLIST */
+  .route-check-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .route-check-item:hover { border-color: var(--border-bright); }
+  .route-check-item input[type=checkbox] { accent-color: #2e7d32; width: 14px; height: 14px; cursor: pointer; }
+  .route-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(46,125,50,0.25); border-radius: 2px; }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  .info-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(46,125,50,0.09); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row-label { color: var(--text-muted); font-size: 12px; }
+  .info-row-val { color: var(--text-primary); font-weight: 500; }
+  .section-gap { margin-bottom: 20px; }
+
+  /* LOCATION SELECTOR */
+  .location-selector {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 18px;
+  }
+  .location-selector label { font-size: 12px; color: var(--text-muted); white-space: nowrap; margin: 0; }
+  .location-selector select { width: auto; min-width: 200px; font-size: 13px; padding: 5px 10px; }
+  .location-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-secondary);
+    padding: 4px 10px;
+    background: var(--green-dim);
+    border: 1px solid rgba(46,125,50,0.25);
+    border-radius: 20px;
+  }
+
+  /* FILE UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(240,248,234,0.5);
+  }
+  .upload-zone:hover { border-color: var(--border-bright); background: rgba(46,125,50,0.06); }
+  .upload-zone input { display: none; }
+  .upload-zone-icon { font-size: 22px; color: var(--text-muted); margin-bottom: 6px; }
+  .upload-zone-label { font-size: 12px; color: var(--text-muted); }
+  .upload-zone-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; opacity: 0.7; }
+  .uploaded-file-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: rgba(46,125,50,0.07);
+    border: 1px solid rgba(46,125,50,0.20);
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .uploaded-file-item i { color: var(--cyan); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">WindTech Innovations</div>
+    <div class="logo-sub">Inspection Platform</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section-label">Operations</div>
+    <div class="nav-item active" data-page="scheduler"><i class="ti ti-drone"></i> Drone Scheduler</div>
+    <div class="nav-section-label">Fleet &amp; Sites</div>
+    <div class="nav-item" data-page="wind-farms"><i class="ti ti-map-2"></i> Wind Farms</div>
+    <div class="nav-item" data-page="turbine-info"><i class="ti ti-windmill"></i> Turbine Info</div>
+    <div class="nav-section-label">Planning</div>
+    <div class="nav-item" data-page="inspection-history"><i class="ti ti-history"></i> Inspection History</div>
+    <div class="nav-item" data-page="weather"><i class="ti ti-cloud"></i> Weather Forecast</div>
+    <div class="nav-item" data-page="field-schedule"><i class="ti ti-calendar-stats"></i> Field Schedule</div>
+    <div class="nav-item" data-page="bird-migration"><i class="ti ti-feather"></i> Bird Migrations</div>
+    <div class="nav-item" data-page="routing"><i class="ti ti-route"></i> Routing Simulation</div>
+  </div>
+  <div class="sidebar-footer">
+    <div style="color:var(--text-muted);font-size:11px">v2.5.0 — WindTech Innovations</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- ========== SCHEDULER PAGE ========== -->
+  <div id="page-scheduler" class="page active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Schedule a Drone Inspection</div>
+        <div class="page-subtitle">Submit an inspection request for one or more turbines</div>
+      </div>
+      <span class="badge badge-cyan"><i class="ti ti-drone" style="font-size:12px"></i> Drone Fleet Online</span>
+    </div>
+
+    <div class="two-col" style="gap:24px;align-items:start">
+      <!-- FORM -->
+      <div>
+        <div class="card section-gap">
+          <div class="card-title">Request Details</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Inspection Date</label>
+              <input type="text" id="insp-date" placeholder="MM/DD/YYYY" maxlength="10">
+            </div>
+            <div class="form-group">
+              <label>Wind Farm ID</label>
+              <input type="text" id="farm-id" placeholder="3-digit ID (e.g. 042)" maxlength="3">
+            </div>
+          </div>
+
+          <div class="divider" style="margin:14px 0"></div>
+          <div class="card-title" style="margin-bottom:10px">Turbine IDs <span style="color:var(--text-muted);font-size:11px;text-transform:none;font-weight:400;letter-spacing:0">(6 digits each)</span></div>
+          <div id="turbine-list">
+            <div class="turbine-row">
+              <span style="font-size:11px;color:var(--text-muted);min-width:14px">#1</span>
+              <input type="text" class="turbine-input" placeholder="e.g. 127111" maxlength="6">
+              <button class="btn btn-ghost btn-sm btn-icon remove-turbine" title="Remove"><i class="ti ti-x" style="font-size:13px"></i></button>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="add-turbine-btn" style="margin-top:6px"><i class="ti ti-plus"></i> Add Turbine</button>
+
+          <div class="divider" style="margin:14px 0"></div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Inspection Description</label>
+            <textarea id="insp-desc" placeholder="Describe the scope, priority, or any specific concerns for this inspection..."></textarea>
+          </div>
+
+          <!-- NEW: Vector Route Upload -->
+          <div class="form-group full" style="margin-bottom:4px">
+            <label><i class="ti ti-route" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i> Vector Route <span style="color:var(--text-muted);font-size:11px;font-weight:400">(optional — upload exported route from Routing Simulator)</span></label>
+            <label class="upload-zone" id="vector-route-zone">
+              <input type="file" id="vector-route-upload" accept=".json,.geojson,.kml">
+              <div class="upload-zone-icon"><i class="ti ti-file-vector"></i></div>
+              <div class="upload-zone-label">Click to upload route file</div>
+              <div class="upload-zone-sub">.json · .geojson · .kml</div>
+            </label>
+            <div id="vector-route-list"></div>
+          </div>
+
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-primary" id="submit-btn"><i class="ti ti-send"></i> Submit Request</button>
+            <button class="btn btn-ghost" id="clear-btn"><i class="ti ti-x"></i> Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REQUESTS LIST + TRACKER -->
+      <div>
+        <div class="card section-gap">
+          <div class="card-title">Request Progress</div>
+          <div style="margin-bottom:16px">
+            <div class="tracker" id="status-tracker">
+              <div class="tracker-step" data-status="pending"><div class="tracker-dot"></div>Pending</div>
+              <div class="tracker-step" data-status="in-review"><div class="tracker-dot"></div>In Review</div>
+              <div class="tracker-step" data-status="review"><div class="tracker-dot"></div>Review</div>
+              <div class="tracker-step" data-status="accepted"><div class="tracker-dot"></div>Accepted</div>
+              <div class="tracker-step" data-status="rejected"><div class="tracker-dot"></div>Rejected</div>
+            </div>
+          </div>
+          <div id="no-selected" style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px 0">Select a request below to view status</div>
+          <div id="selected-request-detail" style="display:none">
+            <div class="info-row"><span class="info-row-label">Request ID</span><span class="info-row-val mono" id="detail-id"></span></div>
+            <div class="info-row"><span class="info-row-label">Date</span><span class="info-row-val" id="detail-date"></span></div>
+            <div class="info-row"><span class="info-row-label">Farm ID</span><span class="info-row-val mono" id="detail-farm"></span></div>
+            <div class="info-row"><span class="info-row-label">Turbines</span><span class="info-row-val mono" id="detail-turbines"></span></div>
+            <div class="info-row"><span class="info-row-label">Vector Route</span><span class="info-row-val" id="detail-route">—</span></div>
+            <div class="info-row"><span class="info-row-label">Status</span><span id="detail-status"></span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Submitted Requests</div>
+          <div id="requests-list">
+            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px 0">No requests submitted yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== WIND FARMS PAGE ========== -->
+  <div id="page-wind-farms" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="map-page-title">Map of Wind Farm #042</div>
+        <div class="page-subtitle">Select a farm, upload vector routes, view drone paths</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="map-farm-id-input" placeholder="Farm ID" maxlength="3" style="width:90px">
+        <button class="btn btn-secondary btn-sm" id="load-farm-btn"><i class="ti ti-search"></i> Load</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i> Upload Route <input type="file" id="route-upload" accept=".json,.geojson,.kml" style="display:none"></label>
+        <button class="btn btn-ghost btn-sm" id="export-route-btn"><i class="ti ti-download"></i> Export</button>
+      </div>
+    </div>
+
+    <div class="two-col" style="gap:16px;align-items:start">
+      <div style="grid-column:1/span2">
+        <!-- Map with collapsible side tabs -->
+        <div class="map-outer">
+          <div id="map-container">
+            <svg id="map-svg" viewBox="0 0 900 400" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(46,125,50,0.08)" stroke-width="0.5"/>
+                </pattern>
+                <marker id="arrow-cyan" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="rgba(46,125,50,0.8)"/>
+                </marker>
+              </defs>
+              <rect width="900" height="400" fill="url(#grid)"/>
+              <g id="forest-group">
+                <ellipse cx="760" cy="90" rx="55" ry="35" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.4)" stroke-width="0.5"/>
+                <text x="760" y="83" text-anchor="middle" font-size="16" fill="rgba(34,197,94,0.8)">🌲</text>
+                <text x="745" y="99" text-anchor="middle" font-size="16" fill="rgba(34,197,94,0.8)">🌲</text>
+                <text x="775" y="99" text-anchor="middle" font-size="16" fill="rgba(34,197,94,0.8)">🌲</text>
+                <ellipse cx="80" cy="320" rx="60" ry="30" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.3)" stroke-width="0.5"/>
+                <text x="65" y="315" text-anchor="middle" font-size="16" fill="rgba(34,197,94,0.7)">🌲</text>
+                <text x="95" y="315" text-anchor="middle" font-size="16" fill="rgba(34,197,94,0.7)">🌲</text>
+                <text x="80" y="330" text-anchor="middle" font-size="16" fill="rgba(34,197,94,0.7)">🌲</text>
+              </g>
+              <g id="warehouse" transform="translate(800,320)">
+                <rect x="-22" y="-16" width="44" height="32" rx="3" fill="rgba(245,200,0,0.18)" stroke="rgba(200,160,0,0.6)" stroke-width="1"/>
+                <text x="0" y="4" text-anchor="middle" font-size="18" fill="rgba(180,130,0,0.9)">🏭</text>
+                <text x="0" y="26" text-anchor="middle" font-size="9" fill="rgba(160,110,0,0.8)" font-family="DM Sans,sans-serif">Storage</text>
+              </g>
+              <g id="route-a" opacity="1">
+                <path d="M800,320 Q600,280 480,200 Q380,130 240,160 Q160,175 120,200 Q180,180 260,130 Q380,80 480,120 Q640,170 800,320" fill="none" stroke="rgba(46,125,50,0.7)" stroke-width="1.5" stroke-dasharray="8,5" marker-end="url(#arrow-cyan)"/>
+              </g>
+              <g id="route-b" opacity="0" style="transition:opacity 0.3s">
+                <path d="M800,320 Q750,260 650,230 Q540,200 430,220 Q320,240 200,250 Q120,260 100,290" fill="none" stroke="rgba(20,140,80,0.6)" stroke-width="1.5" stroke-dasharray="8,5"/>
+              </g>
+              <g id="route-c" opacity="0" style="transition:opacity 0.3s">
+                <path d="M800,320 Q820,200 700,150 Q580,100 450,130 Q320,160 220,140 Q150,130 100,160" fill="none" stroke="rgba(200,160,0,0.6)" stroke-width="1.5" stroke-dasharray="8,5"/>
+              </g>
+              <g class="turbine-clickable" data-id="127111" onclick="goToTurbine('127111')" transform="translate(120,200)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127111</text>
+              </g>
+              <g class="turbine-clickable" data-id="127112" onclick="goToTurbine('127112')" transform="translate(240,160)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127112</text>
+              </g>
+              <g class="turbine-clickable" data-id="127113" onclick="goToTurbine('127113')" transform="translate(360,130)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127113</text>
+              </g>
+              <g class="turbine-clickable" data-id="127114" onclick="goToTurbine('127114')" transform="translate(480,200)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127114</text>
+              </g>
+              <g class="turbine-clickable" data-id="127115" onclick="goToTurbine('127115')" transform="translate(600,180)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127115</text>
+              </g>
+              <g class="turbine-clickable" data-id="127116" onclick="goToTurbine('127116')" transform="translate(340,270)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127116</text>
+              </g>
+              <g class="turbine-clickable" data-id="127117" onclick="goToTurbine('127117')" transform="translate(520,310)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127117</text>
+              </g>
+              <g class="turbine-clickable" data-id="127118" onclick="goToTurbine('127118')" transform="translate(660,300)">
+                <circle r="14" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.55)" stroke-width="1"/>
+                <text y="5" text-anchor="middle" font-size="16">⚙️</text>
+                <text y="26" text-anchor="middle" font-size="8" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">127118</text>
+              </g>
+              <g transform="translate(860,30)">
+                <circle r="18" fill="rgba(255,255,255,0.88)" stroke="rgba(46,125,50,0.3)" stroke-width="1"/>
+                <text y="-5" text-anchor="middle" font-size="9" fill="rgba(46,125,50,0.9)" font-family="DM Sans,sans-serif" font-weight="600">N</text>
+                <text y="12" text-anchor="middle" font-size="9" fill="rgba(46,125,50,0.45)" font-family="DM Sans,sans-serif">S</text>
+                <line x1="0" y1="-10" x2="0" y2="-2" stroke="rgba(46,125,50,0.8)" stroke-width="1.5"/>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Side tab panels -->
+          <div class="map-side-tabs">
+            <div class="map-side-tab-group">
+              <!-- Weather tab handle -->
+              <div class="map-tab-handle" id="handle-weather" onclick="toggleMapTab('weather')">
+                <i class="ti ti-cloud" style="font-size:12px;writing-mode:horizontal-tb;transform:none"></i>
+                Weather
+              </div>
+              <!-- Legend tab handle -->
+              <div class="map-tab-handle" id="handle-legend" onclick="toggleMapTab('legend')" style="flex:1;border-bottom:none">
+                <i class="ti ti-list" style="font-size:12px;writing-mode:horizontal-tb;transform:none"></i>
+                Legend
+              </div>
+            </div>
+
+            <!-- Weather panel (positioned absolutely) -->
+            <div class="map-side-panel" id="panel-weather">
+              <div class="map-side-panel-title">Current Conditions</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <span style="font-size:24px">☀️</span>
+                <div>
+                  <div class="map-weather-temp">74°F</div>
+                  <div style="font-size:11px;color:var(--text-muted)">Wind: 12.4 mph NW</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Forecast Date</div>
+              <select id="map-weather-date" style="font-size:11px;padding:3px 6px;width:100%;margin-bottom:8px">
+                <option>May 28 — Today</option>
+                <option>May 29</option>
+                <option>May 30</option>
+                <option>May 31</option>
+                <option>Jun 1</option>
+              </select>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Humidity: 45% · Gusts: 18 mph</div>
+            </div>
+
+            <!-- Legend panel (positioned absolutely, offset from top for weather handle) -->
+            <div class="map-side-panel" id="panel-legend" style="top:auto;bottom:0">
+              <div class="map-side-panel-title">Map Legend</div>
+              <div class="key-row"><span style="font-size:14px">⚙️</span> Wind Turbine <span style="color:var(--text-muted);font-size:10px;margin-left:2px">(click)</span></div>
+              <div class="key-row"><span style="font-size:14px">🌲</span> Forest</div>
+              <div class="key-row"><span style="font-size:14px">🏭</span> Inventory Storage</div>
+              <div class="key-row" style="margin-top:6px">
+                <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="rgba(46,125,50,0.75)" stroke-width="1.5" stroke-dasharray="5,3"/></svg>
+                <span>Route Alpha</span>
+              </div>
+              <div class="key-row">
+                <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="rgba(20,140,80,0.65)" stroke-width="1.5" stroke-dasharray="5,3"/></svg>
+                <span>Route Beta</span>
+              </div>
+              <div class="key-row">
+                <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="rgba(200,160,0,0.65)" stroke-width="1.5" stroke-dasharray="5,3"/></svg>
+                <span>Route Gamma</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drone Route Checklist -->
+      <div class="card">
+        <div class="card-title">Drone Route Paths</div>
+        <div id="route-checklist">
+          <label class="route-check-item">
+            <input type="checkbox" checked onchange="toggleRoute('a',this.checked)">
+            <div class="route-dot" style="background:rgba(46,125,50,0.8)"></div>
+            <span style="font-size:13px;color:var(--text-secondary)">Route Alpha</span>
+            <span class="badge badge-green" style="margin-left:auto;font-size:10px">Optimal</span>
+          </label>
+          <label class="route-check-item">
+            <input type="checkbox" onchange="toggleRoute('b',this.checked)">
+            <div class="route-dot" style="background:rgba(20,140,80,0.8)"></div>
+            <span style="font-size:13px;color:var(--text-secondary)">Route Beta</span>
+            <span class="badge badge-amber" style="margin-left:auto;font-size:10px">Alt</span>
+          </label>
+          <label class="route-check-item">
+            <input type="checkbox" onchange="toggleRoute('c',this.checked)">
+            <div class="route-dot" style="background:rgba(200,160,0,0.8)"></div>
+            <span style="font-size:13px;color:var(--text-secondary)">Route Gamma</span>
+            <span class="badge badge-gray" style="margin-left:auto;font-size:10px">Draft</span>
+          </label>
+          <div id="uploaded-routes"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="document.getElementById('route-upload').click()"><i class="ti ti-upload"></i> Upload from Routing Sim</button>
+      </div>
+
+      <!-- Farm Info -->
+      <div class="card">
+        <div class="card-title">Farm Summary</div>
+        <div class="info-row"><span class="info-row-label">Farm ID</span><span class="info-row-val mono" id="map-farm-id-display">042</span></div>
+        <div class="info-row"><span class="info-row-label">Region</span><span class="info-row-val">Pacific Northwest</span></div>
+        <div class="info-row"><span class="info-row-label">Turbines</span><span class="info-row-val">8 units</span></div>
+        <div class="info-row"><span class="info-row-label">Capacity</span><span class="info-row-val">240 MW</span></div>
+        <div class="info-row"><span class="info-row-label">Last Inspection</span><span class="info-row-val">04/14/2026</span></div>
+        <div class="info-row"><span class="info-row-label">Status</span><span class="badge badge-green">Active</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TURBINE INFO PAGE ========== -->
+  <div id="page-turbine-info" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="turbine-page-title">Turbine #127111</div>
+        <div class="page-subtitle">Wind Farm #042 — Pacific Northwest Region</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="turbine-id-input" placeholder="Turbine ID" maxlength="6" style="width:120px">
+        <button class="btn btn-secondary btn-sm" onclick="loadTurbine()"><i class="ti ti-search"></i> Load</button>
+        <button class="btn btn-ghost btn-sm" onclick="navTo('wind-farms')"><i class="ti ti-map-2"></i> Back to Map</button>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTurbineTab('info',this)">Information</button>
+      <button class="tab-btn" onclick="switchTurbineTab('history',this)">History</button>
+    </div>
+
+    <div id="turbine-tab-info" class="tab-panel active">
+      <div class="two-col" style="gap:16px;align-items:start">
+        <div class="card">
+          <div class="card-title">Turbine Details</div>
+          <div class="info-row"><span class="info-row-label">Status</span><span class="badge badge-green">Active</span></div>
+          <div class="info-row"><span class="info-row-label">Location</span><span class="info-row-val mono">40.753, -73.983</span></div>
+          <div class="info-row"><span class="info-row-label">Certification</span><span class="info-row-val">Remote Pilot</span></div>
+          <div class="info-row"><span class="info-row-label">Last Inspection</span><span class="info-row-val">01/02/2026</span></div>
+          <div class="info-row"><span class="info-row-label">Model</span><span class="info-row-val">Vestas V150-4.5</span></div>
+          <div class="info-row"><span class="info-row-label">Capacity</span><span class="info-row-val">4.5 MW</span></div>
+          <div class="info-row"><span class="info-row-label">Hub Height</span><span class="info-row-val">105 m</span></div>
+          <div class="info-row"><span class="info-row-label">Commissioned</span><span class="info-row-val">03/15/2019</span></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-title">Operational Metrics</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="background:rgba(240,248,234,0.9);border:1px solid var(--border);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Uptime</div>
+                <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--green)">98.4%</div>
+              </div>
+              <div style="background:rgba(240,248,234,0.9);border:1px solid var(--border);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Output</div>
+                <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700">3.8 MW</div>
+              </div>
+              <div style="background:rgba(240,248,234,0.9);border:1px solid var(--border);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Inspections</div>
+                <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700">14</div>
+              </div>
+              <div style="background:rgba(240,248,234,0.9);border:1px solid var(--border);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Alerts</div>
+                <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--amber)">1</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Blade Condition</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>Blade A</span><span>Good</span></div>
+                <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px"><div style="width:90%;height:100%;background:var(--green);border-radius:3px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>Blade B</span><span>Minor Wear</span></div>
+                <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px"><div style="width:72%;height:100%;background:var(--amber);border-radius:3px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>Blade C</span><span>Good</span></div>
+                <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px"><div style="width:88%;height:100%;background:var(--green);border-radius:3px"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="turbine-tab-history" class="tab-panel">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:0">Inspection History</div>
+          <div class="filter-bar" style="margin-bottom:0">
+            <span class="filter-label">Filter:</span>
+            <select id="hist-month-filter" onchange="filterHistory()">
+              <option value="">All Months</option>
+              <option>January</option><option>February</option><option>March</option>
+              <option>April</option><option>May</option><option>June</option>
+              <option>July</option><option>August</option><option>September</option>
+              <option>October</option><option>November</option><option>December</option>
+            </select>
+            <select id="hist-status-filter" onchange="filterHistory()">
+              <option value="">All Status</option>
+              <option>Good</option><option>Fair</option><option>Needs Attention</option><option>Critical</option>
+            </select>
+            <span class="filter-label" style="margin-left:8px">Sort:</span>
+            <select id="hist-sort" onchange="filterHistory()">
+              <option value="date">By Date</option>
+              <option value="id">By Inspection ID</option>
+              <option value="status">By Status</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th onclick="setSortHistory('date')">Date <i class="ti ti-arrows-sort" style="font-size:11px"></i></th>
+                <th onclick="setSortHistory('id')">Inspection ID <i class="ti ti-arrows-sort" style="font-size:11px"></i></th>
+                <th>Type</th>
+                <th onclick="setSortHistory('status')">Status <i class="ti ti-arrows-sort" style="font-size:11px"></i></th>
+                <th>Inspector</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== INSPECTION HISTORY PAGE ========== -->
+  <div id="page-inspection-history" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Inspection History</div>
+        <div class="page-subtitle">All drone inspection records across all turbines and farms — hover status badges for inspection details</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="filter-bar" style="margin-bottom:16px">
+        <span class="filter-label">Filter:</span>
+        <input type="text" placeholder="Farm ID" id="gh-farm" style="width:100px" oninput="filterGlobalHistory()">
+        <input type="text" placeholder="Turbine ID" id="gh-turbine" style="width:110px" oninput="filterGlobalHistory()">
+        <select id="gh-status" onchange="filterGlobalHistory()">
+          <option value="">All Status</option>
+          <option>Good</option><option>Fair</option><option>Needs Attention</option><option>Critical</option>
+        </select>
+        <select id="gh-month" onchange="filterGlobalHistory()">
+          <option value="">All Months</option>
+          <option>January</option><option>February</option><option>March</option>
+          <option>April</option><option>May</option><option>June</option>
+          <option>July</option><option>August</option><option>September</option>
+          <option>October</option><option>November</option><option>December</option>
+        </select>
+        <select id="gh-type" onchange="filterGlobalHistory()">
+          <option value="">All Types</option>
+          <option>Blade Visual</option><option>Thermal</option><option>Structural</option><option>Full</option>
+        </select>
+        <select id="gh-farm-select" onchange="filterGlobalHistory()">
+          <option value="">All Farms</option>
+          <option value="042">Farm #042 — Pacific Northwest</option>
+          <option value="107">Farm #107 — Central Valley</option>
+          <option value="215">Farm #215 — Texas Panhandle</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Inspection ID</th>
+              <th>Farm ID</th>
+              <th>Turbine ID</th>
+              <th>Type</th>
+              <th>Status <span style="font-size:10px;color:var(--text-muted);text-transform:none;font-weight:400;letter-spacing:0">(hover for details)</span></th>
+              <th>Inspector</th>
+            </tr>
+          </thead>
+          <tbody id="global-history-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== WEATHER PAGE ========== -->
+  <div id="page-weather" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Weather Forecast</div>
+        <div class="page-subtitle">Detailed conditions for optimal drone flight planning</div>
+      </div>
+      <span class="badge badge-green" id="weather-flight-badge"><i class="ti ti-check" style="font-size:11px"></i> Good Flight Conditions</span>
+    </div>
+
+    <!-- Location selector -->
+    <div class="location-selector">
+      <i class="ti ti-map-pin" style="font-size:16px;color:var(--cyan)"></i>
+      <label for="weather-farm-select">Wind Farm Location:</label>
+      <select id="weather-farm-select" onchange="changeWeatherLocation()">
+        <option value="042">Farm #042 — Pacific Northwest, WA (47.6°N, 120.5°W)</option>
+        <option value="107">Farm #107 — Central Valley, CA (36.7°N, 119.8°W)</option>
+        <option value="215">Farm #215 — Texas Panhandle, TX (35.2°N, 101.8°W)</option>
+      </select>
+      <span class="location-badge" id="weather-location-badge"><i class="ti ti-circle-check" style="font-size:12px"></i> Pacific Northwest, WA</span>
+    </div>
+
+    <div class="weather-grid" id="weather-day-grid"></div>
+
+    <div class="card section-gap" id="weather-detail-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700" id="w-date-title">May 28th</div>
+          <div style="font-size:12px;color:var(--text-muted)" id="w-condition-label">Partly Cloudy — Suitable for drone operations</div>
+        </div>
+        <div style="font-size:48px" id="w-big-icon">⛅</div>
+      </div>
+      <div class="weather-detail-grid" id="weather-stats-grid"></div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-title">Flight Condition Alerts</div>
+      <div id="weather-alerts"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Hourly Wind Speed (mph)</div>
+      <div id="wind-bars"></div>
+    </div>
+  </div>
+
+  <!-- ========== FIELD SCHEDULE PAGE ========== -->
+  <div id="page-field-schedule" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Field Schedule</div>
+        <div class="page-subtitle">Upcoming and historical field operations across all farms</div>
+      </div>
+      <button class="btn btn-secondary btn-sm"><i class="ti ti-plus"></i> Add Operation</button>
+    </div>
+
+    <div class="section-gap">
+      <div class="ops-section-title upcoming"><i class="ti ti-calendar-event" style="font-size:14px;color:var(--cyan)"></i> Current &amp; Upcoming Operations</div>
+      <div class="filter-bar">
+        <span class="filter-label">Filter:</span>
+        <select id="up-type" onchange="filterUpcoming()"><option value="">All Types</option><option>Drone Inspection</option><option>Maintenance</option><option>Emergency</option></select>
+        <select id="up-farm" onchange="filterUpcoming()"><option value="">All Farms</option><option>042</option><option>107</option><option>215</option></select>
+        <select id="up-status" onchange="filterUpcoming()"><option value="">All Status</option><option>Scheduled</option><option>In Progress</option><option>Completed</option></select>
+        <select id="up-month" onchange="filterUpcoming()"><option value="">All Months</option><option>May</option><option>June</option><option>July</option></select>
+        <span class="filter-label" style="margin-left:8px">Sort:</span>
+        <select id="up-sort" onchange="filterUpcoming()"><option value="datetime">By Date/Time</option><option value="farm">By Farm ID</option></select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="data-table" id="upcoming-table">
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Operation Type</th>
+                <th>Farm ID</th>
+                <th>Operation ID</th>
+                <th>Assigned To</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="upcoming-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="ops-section-title history"><i class="ti ti-history" style="font-size:14px;color:var(--text-muted)"></i> Historical Operations</div>
+      <div class="filter-bar">
+        <span class="filter-label">Filter:</span>
+        <select id="his-type" onchange="filterHistory2()"><option value="">All Types</option><option>Drone Inspection</option><option>Maintenance</option><option>Emergency</option></select>
+        <select id="his-farm" onchange="filterHistory2()"><option value="">All Farms</option><option>042</option><option>107</option><option>215</option></select>
+        <select id="his-status" onchange="filterHistory2()"><option value="">All Status</option><option>Completed</option><option>Cancelled</option></select>
+        <select id="his-month" onchange="filterHistory2()"><option value="">All Months</option><option>January</option><option>February</option><option>March</option><option>April</option></select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Operation Type</th>
+                <th>Farm ID</th>
+                <th>Operation ID</th>
+                <th>Assigned To</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="history2-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== BIRD MIGRATION PAGE ========== -->
+  <div id="page-bird-migration" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Bird Migration Patterns</div>
+        <div class="page-subtitle">Active migration corridors and seasonal forecasts for flight planning</div>
+      </div>
+      <span class="badge badge-amber" id="bird-alert-badge"><i class="ti ti-alert-triangle" style="font-size:11px"></i> 2 Active Corridors</span>
+    </div>
+
+    <!-- Location selector -->
+    <div class="location-selector">
+      <i class="ti ti-map-pin" style="font-size:16px;color:var(--cyan)"></i>
+      <label for="bird-farm-select">Wind Farm Location:</label>
+      <select id="bird-farm-select" onchange="changeBirdLocation()">
+        <option value="042">Farm #042 — Pacific Northwest, WA</option>
+        <option value="107">Farm #107 — Central Valley, CA</option>
+        <option value="215">Farm #215 — Texas Panhandle, TX</option>
+      </select>
+      <span class="location-badge" id="bird-location-badge"><i class="ti ti-circle-check" style="font-size:12px"></i> Pacific Northwest, WA</span>
+    </div>
+
+    <div id="bird-migration-content"></div>
+  </div>
+
+  <!-- ========== ROUTING SIMULATION PAGE ========== -->
+  <div id="page-routing" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Routing Simulation</div>
+        <div class="page-subtitle">Plan, simulate, and export drone flight paths</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" id="run-sim-btn"><i class="ti ti-player-play"></i> Run Simulation</button>
+        <button class="btn btn-secondary" id="export-sim-btn"><i class="ti ti-download"></i> Export Route</button>
+        <button class="btn btn-ghost" id="clear-sim-btn"><i class="ti ti-eraser"></i> Clear</button>
+      </div>
+    </div>
+
+    <!-- Wind Farm selector for routing -->
+    <div class="location-selector" style="margin-bottom:16px">
+      <i class="ti ti-map-pin" style="font-size:16px;color:var(--cyan)"></i>
+      <label for="sim-farm-select">Wind Farm:</label>
+      <select id="sim-farm-select" onchange="changeSimFarm()">
+        <option value="042">Farm #042 — Pacific Northwest, WA (8 turbines)</option>
+        <option value="107">Farm #107 — Central Valley, CA (10 turbines)</option>
+        <option value="215">Farm #215 — Texas Panhandle, TX (12 turbines)</option>
+      </select>
+      <span class="location-badge" id="sim-farm-badge"><i class="ti ti-windmill" style="font-size:12px"></i> Farm #042</span>
+      <span style="font-size:12px;color:var(--text-muted);margin-left:auto">Click canvas to place waypoints · Right-click to undo last point</span>
+    </div>
+
+    <div class="sim-controls">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--text-muted)">Drones:</span>
+        <div class="drone-counter" id="drone-tabs">
+          <button class="drone-tab active" data-drone="0">Drone 1</button>
+          <button class="drone-tab" data-drone="1">Drone 2</button>
+          <button class="drone-tab" data-drone="2">Drone 3</button>
+          <button class="btn btn-ghost btn-sm" id="add-drone-btn"><i class="ti ti-plus"></i></button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <input type="checkbox" id="overlay-farm" checked style="accent-color:var(--cyan)"> Overlay Wind Farm
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <input type="checkbox" id="overlay-birds" checked style="accent-color:var(--amber)"> Overlay Bird Corridors
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <input type="checkbox" id="overlay-wind" style="accent-color:var(--cyan)"> Wind Vectors
+        </label>
+      </div>
+    </div>
+
+    <div id="sim-canvas-wrap" style="margin-bottom:14px">
+      <canvas id="sim-canvas" width="900" height="460"></canvas>
+      <div id="sim-overlay-msg" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--text-muted);background:rgba(255,255,255,0.88);padding:4px 12px;border-radius:4px;box-shadow:0 1px 6px rgba(46,125,50,0.1);pointer-events:none">Click on canvas to place waypoints — right-click to remove last</div>
+    </div>
+
+    <div class="sim-legend">
+      <div class="sim-legend-item"><div class="sim-legend-dot" style="background:rgba(46,125,50,0.85)"></div> Drone 1 path</div>
+      <div class="sim-legend-item"><div class="sim-legend-dot" style="background:#a78bfa"></div> Drone 2 path</div>
+      <div class="sim-legend-item"><div class="sim-legend-dot" style="background:var(--amber)"></div> Drone 3 path</div>
+      <div class="sim-legend-item"><div class="sim-legend-dot" style="background:rgba(34,197,94,0.8)"></div> Turbine</div>
+      <div class="sim-legend-item"><div class="sim-legend-dot" style="background:rgba(245,158,11,0.5);border:1px dashed var(--amber)"></div> Bird corridor</div>
+      <div style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="sim-status-text">0 waypoints — Drone 1</div>
+    </div>
+
+    <div class="two-col" style="gap:14px;margin-top:14px">
+      <div class="card">
+        <div class="card-title">Route Summary</div>
+        <div id="route-summary-list">
+          <div class="info-row"><span class="info-row-label">Farm</span><span class="info-row-val" id="sum-farm">Farm #042 — Pacific Northwest</span></div>
+          <div class="info-row"><span class="info-row-label">Drone 1 Waypoints</span><span class="info-row-val" id="sum-d1">0</span></div>
+          <div class="info-row"><span class="info-row-label">Drone 2 Waypoints</span><span class="info-row-val" id="sum-d2">0</span></div>
+          <div class="info-row"><span class="info-row-label">Drone 3 Waypoints</span><span class="info-row-val" id="sum-d3">0</span></div>
+          <div class="info-row"><span class="info-row-label">Est. Flight Time</span><span class="info-row-val" id="sum-time">—</span></div>
+          <div class="info-row"><span class="info-row-label">Collision Risk</span><span id="sum-risk" class="badge badge-green">Low</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Simulation Controls</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <label style="font-size:12px;color:var(--text-muted);min-width:80px">Speed</label>
+            <input type="range" min="1" max="10" value="5" id="sim-speed" style="flex:1">
+            <span style="font-size:12px;color:var(--text-secondary);min-width:20px" id="sim-speed-val">5</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" id="play-btn" style="flex:1"><i class="ti ti-player-play"></i> Play</button>
+            <button class="btn btn-ghost" id="pause-btn" style="flex:1"><i class="ti ti-player-pause"></i> Pause</button>
+            <button class="btn btn-ghost" id="reset-btn" style="flex:1"><i class="ti ti-refresh"></i> Reset</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted)">
+            Progress: <span id="sim-progress">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOOLTIP -->
+<div class="status-tooltip" id="status-tooltip">
+  <div class="tooltip-title" id="tt-title"></div>
+  <div id="tt-body"></div>
+</div>
+
+<script>
+// ---- NAVIGATION ----
+function navTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  if (page === 'weather') renderWeather();
+  if (page === 'field-schedule') renderFieldSchedule();
+  if (page === 'inspection-history') renderGlobalHistory();
+  if (page === 'turbine-info') renderHistoryTable();
+  if (page === 'routing') initSimCanvas();
+  if (page === 'bird-migration') renderBirdMigration();
+}
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => navTo(item.dataset.page));
+});
+
+// ---- DATE FORMATTER ----
+function formatDateInput(e) {
+  let v = e.target.value.replace(/\D/g,'');
+  if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+  if (v.length >= 6) v = v.slice(0,5) + '/' + v.slice(5);
+  e.target.value = v.slice(0,10);
+}
+document.getElementById('insp-date').addEventListener('input', formatDateInput);
+
+// ---- TURBINE ROWS ----
+let turbineCount = 1;
+document.getElementById('add-turbine-btn').addEventListener('click', () => {
+  turbineCount++;
+  const div = document.createElement('div');
+  div.className = 'turbine-row';
+  div.innerHTML = `<span style="font-size:11px;color:var(--text-muted);min-width:14px">#${turbineCount}</span>
+    <input type="text" class="turbine-input" placeholder="e.g. ${100000+turbineCount*1001}" maxlength="6">
+    <button class="btn btn-ghost btn-sm btn-icon remove-turbine" title="Remove"><i class="ti ti-x" style="font-size:13px"></i></button>`;
+  document.getElementById('turbine-list').appendChild(div);
+  bindRemove();
+});
+function bindRemove() {
+  document.querySelectorAll('.remove-turbine').forEach(btn => {
+    btn.onclick = function() {
+      const rows = document.querySelectorAll('.turbine-row');
+      if (rows.length > 1) btn.closest('.turbine-row').remove();
+      renumberTurbines();
+    };
+  });
+}
+function renumberTurbines() {
+  document.querySelectorAll('.turbine-row').forEach((row,i) => {
+    row.querySelector('span').textContent = '#'+(i+1);
+  });
+  turbineCount = document.querySelectorAll('.turbine-row').length;
+}
+bindRemove();
+
+// ---- VECTOR ROUTE UPLOAD (Scheduler) ----
+document.getElementById('vector-route-upload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const list = document.getElementById('vector-route-list');
+  list.innerHTML = '';
+  const item = document.createElement('div');
+  item.className = 'uploaded-file-item';
+  item.innerHTML = `<i class="ti ti-file-vector"></i><span style="flex:1">${file.name}</span><span class="badge badge-cyan" style="font-size:10px">Ready</span>`;
+  list.appendChild(item);
+  // Store file name for submission
+  document.getElementById('vector-route-zone').dataset.filename = file.name;
+});
+
+// ---- SUBMIT REQUEST ----
+let requests = [];
+let reqCounter = 1000;
+
+document.getElementById('submit-btn').addEventListener('click', () => {
+  const date = document.getElementById('insp-date').value;
+  const farmId = document.getElementById('farm-id').value;
+  const desc = document.getElementById('insp-desc').value;
+  const turbines = [...document.querySelectorAll('.turbine-input')].map(i => i.value).filter(v => v.length === 6);
+  const vectorRoute = document.getElementById('vector-route-zone').dataset.filename || null;
+  if (!date.match(/^\d{2}\/\d{2}\/\d{4}$/)) { alert('Please enter date in MM/DD/YYYY format'); return; }
+  if (farmId.length !== 3) { alert('Wind Farm ID must be 3 digits'); return; }
+  if (turbines.length === 0) { alert('Add at least one valid 6-digit turbine ID'); return; }
+  const statuses = ['pending','in-review','review','accepted','rejected'];
+  const status = statuses[Math.floor(Math.random()*3)];
+  const req = { id: 'REQ-' + (++reqCounter), date, farmId, turbines, desc, status, vectorRoute };
+  requests.push(req);
+  renderRequests();
+  selectRequest(req);
+  document.getElementById('insp-date').value = '';
+  document.getElementById('farm-id').value = '';
+  document.getElementById('insp-desc').value = '';
+  document.querySelectorAll('.turbine-input').forEach(i => i.value = '');
+  document.getElementById('vector-route-list').innerHTML = '';
+  delete document.getElementById('vector-route-zone').dataset.filename;
+});
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('insp-date').value = '';
+  document.getElementById('farm-id').value = '';
+  document.getElementById('insp-desc').value = '';
+  document.querySelectorAll('.turbine-input').forEach(i => i.value = '');
+  document.getElementById('vector-route-list').innerHTML = '';
+  delete document.getElementById('vector-route-zone').dataset.filename;
+});
+
+function renderRequests() {
+  const list = document.getElementById('requests-list');
+  if (requests.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px 0">No requests submitted yet</div>';
+    return;
+  }
+  list.innerHTML = requests.slice().reverse().map(r => `
+    <div class="request-item" onclick="selectRequest(requests.find(x=>x.id==='${r.id}'))">
+      <div class="request-item-left">
+        <div class="request-id">${r.id}</div>
+        <div class="request-meta">Farm #${r.farmId} — ${r.date} — ${r.turbines.length} turbine(s)${r.vectorRoute ? ' · 📎 Route' : ''}</div>
+      </div>
+      ${statusBadge(r.status)}
+    </div>`).join('');
+}
+
+function statusBadge(s) {
+  const map = {pending:'badge-gray','in-review':'badge-cyan',review:'badge-purple',accepted:'badge-green',rejected:'badge-red'};
+  const labels = {pending:'Pending','in-review':'In Review',review:'Review',accepted:'Accepted',rejected:'Rejected'};
+  return `<span class="badge ${map[s]||'badge-gray'}">${labels[s]||s}</span>`;
+}
+
+function selectRequest(req) {
+  if (!req) return;
+  document.getElementById('no-selected').style.display = 'none';
+  document.getElementById('selected-request-detail').style.display = 'block';
+  document.getElementById('detail-id').textContent = req.id;
+  document.getElementById('detail-date').textContent = req.date;
+  document.getElementById('detail-farm').textContent = '#' + req.farmId;
+  document.getElementById('detail-turbines').textContent = req.turbines.join(', ');
+  document.getElementById('detail-route').innerHTML = req.vectorRoute
+    ? `<span style="color:var(--cyan);font-size:12px"><i class="ti ti-file-vector" style="font-size:13px;vertical-align:-2px"></i> ${req.vectorRoute}</span>`
+    : '—';
+  document.getElementById('detail-status').innerHTML = statusBadge(req.status);
+  const order = ['pending','in-review','review','accepted','rejected'];
+  document.querySelectorAll('.tracker-step').forEach(step => {
+    step.classList.remove('done','active','rejected');
+    const s = step.dataset.status;
+    if (req.status === 'rejected') {
+      if (s === 'rejected') step.classList.add('rejected');
+      else if (order.indexOf(s) < order.indexOf('rejected')) step.classList.add('done');
+    } else {
+      const cur = order.indexOf(req.status);
+      const idx = order.indexOf(s);
+      if (s === 'rejected') return;
+      if (idx < cur) step.classList.add('done');
+      else if (idx === cur) step.classList.add('active');
+    }
+  });
+}
+
+// ---- MAP SIDE TABS ----
+let openMapTab = null;
+function toggleMapTab(tab) {
+  const panel = document.getElementById('panel-' + tab);
+  const handle = document.getElementById('handle-' + tab);
+  if (openMapTab === tab) {
+    panel.classList.remove('open');
+    handle.classList.remove('open');
+    openMapTab = null;
+  } else {
+    // Close any open tab
+    if (openMapTab) {
+      document.getElementById('panel-' + openMapTab).classList.remove('open');
+      document.getElementById('handle-' + openMapTab).classList.remove('open');
+    }
+    panel.classList.add('open');
+    handle.classList.add('open');
+    openMapTab = tab;
+  }
+}
+
+// ---- MAP ----
+document.getElementById('load-farm-btn').addEventListener('click', () => {
+  const id = document.getElementById('map-farm-id-input').value.padStart(3,'0');
+  if (id.length === 3) {
+    document.getElementById('map-page-title').textContent = 'Map of Wind Farm #' + id;
+    document.getElementById('map-farm-id-display').textContent = id;
+  }
+});
+function toggleRoute(name, on) {
+  document.getElementById('route-' + name).style.opacity = on ? '1' : '0';
+}
+function goToTurbine(id) {
+  document.getElementById('turbine-id-input').value = id;
+  loadTurbine(id);
+  navTo('turbine-info');
+}
+document.getElementById('route-upload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const container = document.getElementById('uploaded-routes');
+  const item = document.createElement('label');
+  item.className = 'route-check-item';
+  const col = ['#2e7d32','#4caf50','#d4950a'][container.children.length % 3];
+  item.innerHTML = `<input type="checkbox" checked style="accent-color:${col}"><div class="route-dot" style="background:${col}"></div><span style="font-size:13px;color:var(--text-secondary)">${file.name.replace(/\.[^.]+$/,'')}</span><span class="badge badge-cyan" style="margin-left:auto;font-size:10px">Uploaded</span>`;
+  container.appendChild(item);
+});
+
+// ---- TURBINE INFO ----
+function switchTurbineTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('turbine-tab-' + tab).classList.add('active');
+  if (tab === 'history') renderHistoryTable();
+}
+function loadTurbine(id) {
+  const tid = id || document.getElementById('turbine-id-input').value;
+  if (tid) document.getElementById('turbine-page-title').textContent = 'Turbine #' + tid;
+}
+
+const inspectionData = [
+  {date:'01/02',dateSort:'2026-01-02',id:'#01',type:'Blade Visual',status:'Good',inspector:'Ramos, J.',desc:'Full blade scan. No cracks detected. Minor surface erosion on leading edge of Blade B — monitored.'},
+  {date:'11/14',dateSort:'2025-11-14',id:'#14',type:'Structural',status:'Fair',inspector:'Chen, L.',desc:'Nacelle vibration slightly elevated. Recommended lubrication of yaw bearing. Follow-up scheduled.'},
+  {date:'09/03',dateSort:'2025-09-03',id:'#13',type:'Blade Visual',status:'Good',inspector:'Torres, M.',desc:'Post-storm inspection. All blades intact. No structural damage found.'},
+  {date:'06/17',dateSort:'2025-06-17',id:'#12',type:'Thermal',status:'Needs Attention',inspector:'Kim, S.',desc:'Thermal imaging revealed hot spot in gearbox. Maintenance crew dispatched for investigation.'},
+  {date:'03/28',dateSort:'2025-03-28',id:'#11',type:'Blade Visual',status:'Good',inspector:'Ramos, J.',desc:'Routine spring inspection. Blade coatings in good condition. No concerns.'},
+  {date:'12/05',dateSort:'2024-12-05',id:'#10',type:'Full',status:'Good',inspector:'Okafor, P.',desc:'Annual comprehensive inspection. All systems nominal. Pitch controller firmware updated.'},
+  {date:'08/22',dateSort:'2024-08-22',id:'#09',type:'Structural',status:'Critical',inspector:'Chen, L.',desc:'Crack detected at root of Blade A. Turbine taken offline for emergency repair. Blade replaced.'},
+  {date:'05/10',dateSort:'2024-05-10',id:'#08',type:'Blade Visual',status:'Good',inspector:'Torres, M.',desc:'Pre-summer inspection. Clean blades, no ice damage residue.'},
+  {date:'02/14',dateSort:'2024-02-14',id:'#07',type:'Thermal',status:'Fair',inspector:'Kim, S.',desc:'Generator bearing running slightly warm. Coolant level topped off.'},
+  {date:'10/30',dateSort:'2023-10-30',id:'#06',type:'Blade Visual',status:'Good',inspector:'Ramos, J.',desc:'Fall inspection. All blades pass visual check.'},
+  {date:'07/07',dateSort:'2023-07-07',id:'#05',type:'Full',status:'Good',inspector:'Okafor, P.',desc:'Mid-year comprehensive review. No findings.'},
+  {date:'04/01',dateSort:'2023-04-01',id:'#04',type:'Blade Visual',status:'Needs Attention',inspector:'Chen, L.',desc:'Lightning strike damage found on Blade C tip. Tip cap replaced.'},
+  {date:'01/20',dateSort:'2023-01-20',id:'#03',type:'Structural',status:'Good',inspector:'Torres, M.',desc:'Winter inspection after ice storm. No ice accumulation damage.'},
+  {date:'09/15',dateSort:'2022-09-15',id:'#02',type:'Blade Visual',status:'Good',inspector:'Ramos, J.',desc:'Routine inspection. All clear.'},
+];
+
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function getMonthFromDate(d) {
+  const parts = d.split('-');
+  return monthNames[parseInt(parts[1])-1];
+}
+
+let histSortField = 'date';
+let histSortDir = 1;
+
+function setSortHistory(field) {
+  if (histSortField === field) histSortDir *= -1;
+  else { histSortField = field; histSortDir = 1; }
+  filterHistory();
+}
+
+function filterHistory() {
+  const monthFilter = document.getElementById('hist-month-filter').value;
+  const statusFilter = document.getElementById('hist-status-filter').value;
+  const sortBy = document.getElementById('hist-sort').value;
+  let data = [...inspectionData];
+  if (monthFilter) data = data.filter(r => getMonthFromDate(r.dateSort) === monthFilter);
+  if (statusFilter) data = data.filter(r => r.status === statusFilter);
+  data.sort((a,b) => {
+    if (sortBy === 'date') return a.dateSort > b.dateSort ? -1 : 1;
+    if (sortBy === 'id') return a.id > b.id ? -1 : 1;
+    if (sortBy === 'status') return a.status > b.status ? 1 : -1;
+    return 0;
+  });
+  renderHistoryTable(data);
+}
+
+function renderHistoryTable(data) {
+  data = data || inspectionData;
+  const tbody = document.getElementById('history-tbody');
+  tbody.innerHTML = data.map(r => `<tr>
+    <td class="mono">${r.date}</td>
+    <td class="mono">${r.id}</td>
+    <td style="color:var(--text-secondary)">${r.type}</td>
+    <td><span class="badge ${statusClass(r.status)}" 
+      style="cursor:pointer"
+      onmouseenter="showTooltip(event,'${r.status}','${r.desc.replace(/'/g,"&#39;")}')" 
+      onmouseleave="hideTooltip()"
+      onclick="showTooltip(event,'${r.status}','${r.desc.replace(/'/g,"&#39;")}')">
+      ${r.status}</span></td>
+    <td style="color:var(--text-muted);font-size:12px">${r.inspector}</td>
+  </tr>`).join('');
+}
+
+function statusClass(s) {
+  if (s === 'Good') return 'badge-green';
+  if (s === 'Fair') return 'badge-amber';
+  if (s === 'Needs Attention') return 'badge-amber';
+  if (s === 'Critical') return 'badge-red';
+  return 'badge-gray';
+}
+
+// ---- TOOLTIP ----
+function showTooltip(e, title, body) {
+  const tt = document.getElementById('status-tooltip');
+  document.getElementById('tt-title').textContent = title;
+  document.getElementById('tt-body').textContent = body;
+  tt.style.display = 'block';
+  tt.style.left = (e.clientX + 14) + 'px';
+  tt.style.top = (e.clientY - 10) + 'px';
+}
+function hideTooltip() {
+  document.getElementById('status-tooltip').style.display = 'none';
+}
+document.addEventListener('mousemove', e => {
+  const tt = document.getElementById('status-tooltip');
+  if (tt.style.display === 'block') {
+    tt.style.left = (e.clientX + 14) + 'px';
+    tt.style.top = (e.clientY - 10) + 'px';
+  }
+});
+
+// ---- GLOBAL HISTORY (comprehensive dataset) ----
+const globalHistory = [
+  // Farm 042 - Pacific Northwest (turbines 127111–127118)
+  {date:'05/14/2026',farmId:'042',turbineId:'127111',type:'Blade Visual',status:'Good',id:'INS-0891',inspector:'Ramos, J.',desc:'Full blade scan completed. Leading edges clean, no surface erosion detected. All sensors nominal.'},
+  {date:'05/10/2026',farmId:'042',turbineId:'127112',type:'Thermal',status:'Fair',id:'INS-0890',inspector:'Kim, S.',desc:'Slight thermal variance noted on nacelle yaw ring. Below critical threshold but flagged for monitoring at next scheduled service.'},
+  {date:'04/28/2026',farmId:'042',turbineId:'127113',type:'Structural',status:'Good',id:'INS-0889',inspector:'Torres, M.',desc:'Structural integrity confirmed. Tower base, nacelle mounting, and blade roots all within spec. No corrosion or fatigue cracking.'},
+  {date:'04/14/2026',farmId:'042',turbineId:'127115',type:'Thermal',status:'Needs Attention',id:'INS-0888',inspector:'Chen, L.',desc:'Thermal imaging revealed elevated temperature in main gearbox housing. Oil sample taken and dispatched to lab. Maintenance crew on standby.'},
+  {date:'04/02/2026',farmId:'042',turbineId:'127114',type:'Blade Visual',status:'Good',id:'INS-0887',inspector:'Okafor, P.',desc:'Post-weather event check. Minor debris impact on Blade C trailing edge — scored but not structurally significant. Monitoring note added.'},
+  {date:'03/20/2026',farmId:'042',turbineId:'127113',type:'Full',status:'Good',id:'INS-0886',inspector:'Ramos, J.',desc:'Full annual inspection. All systems nominal. Pitch controller firmware updated to v4.2.1. Lubrication schedule confirmed.'},
+  {date:'03/08/2026',farmId:'042',turbineId:'127116',type:'Structural',status:'Critical',id:'INS-0885',inspector:'Chen, L.',desc:'Hairline crack found at base of Blade B root flange. Turbine shut down immediately. Blade replacement ordered. Engineering assessment underway.'},
+  {date:'02/25/2026',farmId:'042',turbineId:'127117',type:'Blade Visual',status:'Good',id:'INS-0884',inspector:'Torres, M.',desc:'Routine visual inspection. All blades intact. Leading edge protection tape in good condition. No delamination.'},
+  {date:'02/10/2026',farmId:'042',turbineId:'127118',type:'Thermal',status:'Good',id:'INS-0883',inspector:'Kim, S.',desc:'Thermal scan showed uniform temperature across all nacelle components. Generator and gearbox within normal operating parameters.'},
+  {date:'01/22/2026',farmId:'042',turbineId:'127111',type:'Structural',status:'Fair',id:'INS-0882',inspector:'Okafor, P.',desc:'Minor surface corrosion noted on external cable conduit at 40m height. Treated with anti-corrosion coating. Re-inspection in 6 months.'},
+  // Farm 107 - Central Valley, CA (turbines 235001–235006)
+  {date:'05/08/2026',farmId:'107',turbineId:'235001',type:'Full',status:'Good',id:'INS-0881',inspector:'Park, H.',desc:'Comprehensive annual inspection completed. All electrical, mechanical, and structural systems pass. Control logs reviewed — no anomalies.'},
+  {date:'04/22/2026',farmId:'107',turbineId:'235002',type:'Blade Visual',status:'Needs Attention',id:'INS-0880',inspector:'Vasquez, E.',desc:'Leading edge erosion on Blade A exceeds 15% threshold. Erosion protection coating application scheduled within 30 days to prevent further degradation.'},
+  {date:'04/05/2026',farmId:'107',turbineId:'235003',type:'Thermal',status:'Good',id:'INS-0879',inspector:'Park, H.',desc:'No thermal anomalies detected. All bearings, gearbox, generator running within normal temperature range. SCADA data consistent.'},
+  {date:'03/18/2026',farmId:'107',turbineId:'235004',type:'Structural',status:'Good',id:'INS-0878',inspector:'Vasquez, E.',desc:'Post-wind event structural check. No deformation of tower or nacelle structure. All bolts torqued to specification.'},
+  {date:'03/01/2026',farmId:'107',turbineId:'235005',type:'Blade Visual',status:'Fair',id:'INS-0877',inspector:'Nguyen, T.',desc:'Surface paint degradation on all three blades noted. Protective leading edge tape showing wear at outer 2m. Coating refurbishment scheduled.'},
+  {date:'02/14/2026',farmId:'107',turbineId:'235006',type:'Full',status:'Good',id:'INS-0876',inspector:'Park, H.',desc:'Semi-annual inspection completed. Pitch and yaw systems functioning correctly. Cooling system serviced. All certifications current.'},
+  {date:'01/28/2026',farmId:'107',turbineId:'235001',type:'Thermal',status:'Critical',id:'INS-0875',inspector:'Vasquez, E.',desc:'Critical hot spot identified in main transformer coupling. Turbine taken offline pending full electrical inspection. Heat source isolated to failed bearing seal.'},
+  {date:'01/10/2026',farmId:'107',turbineId:'235002',type:'Structural',status:'Good',id:'INS-0874',inspector:'Nguyen, T.',desc:'Tower weld inspection using drone-mounted UT equipment. No cracks or delamination. Surface inspection confirms no corrosion progression.'},
+  // Farm 215 - Texas Panhandle (turbines 312001–312006)
+  {date:'05/16/2026',farmId:'215',turbineId:'312001',type:'Blade Visual',status:'Good',id:'INS-0873',inspector:'Morales, D.',desc:'Spring inspection complete. Blades clean with no hail or ice damage from winter season. Lightning receptor connectors inspected and intact.'},
+  {date:'04/30/2026',farmId:'215',turbineId:'312002',type:'Thermal',status:'Fair',id:'INS-0872',inspector:'Wilson, K.',desc:'Slightly elevated main bearing temperature — within acceptable range but trending upward over three inspections. Bearing replacement pre-ordered as precaution.'},
+  {date:'04/12/2026',farmId:'215',turbineId:'312003',type:'Structural',status:'Good',id:'INS-0871',inspector:'Morales, D.',desc:'Post-storm inspection following high-wind event (65 mph gusts). All structural elements intact. No visible blade damage or tower deformation.'},
+  {date:'03/25/2026',farmId:'215',turbineId:'312004',type:'Full',status:'Needs Attention',id:'INS-0870',inspector:'Wilson, K.',desc:'Annual inspection flagged vibration in low-speed shaft coupling. Gearbox oil sample shows metal particle increase. Maintenance team dispatched within 48h.'},
+  {date:'03/08/2026',farmId:'215',turbineId:'312005',type:'Blade Visual',status:'Good',id:'INS-0869',inspector:'Bradley, A.',desc:'Blade surfaces inspected with 4K drone imaging. No erosion, delamination, or impact damage. Lighting condition good.'},
+  {date:'02/20/2026',farmId:'215',turbineId:'312006',type:'Thermal',status:'Good',id:'INS-0868',inspector:'Morales, D.',desc:'Thermal survey of all electrical panels and nacelle. All temperatures within specification. Power factor correction capacitors checked.'},
+  {date:'02/04/2026',farmId:'215',turbineId:'312001',type:'Structural',status:'Fair',id:'INS-0867',inspector:'Wilson, K.',desc:'Tower access door hinge corrosion noted. Not safety-critical but requires replacement within 90 days per maintenance schedule. Work order raised.'},
+  {date:'01/18/2026',farmId:'215',turbineId:'312003',type:'Blade Visual',status:'Critical',id:'INS-0866',inspector:'Bradley, A.',desc:'Lightning strike damage confirmed on Blade B — 0.8m tip missing. Turbine offline. Blade replacement confirmed for next maintenance window.'},
+];
+
+function filterGlobalHistory() {
+  const farm = document.getElementById('gh-farm').value.toLowerCase();
+  const turbine = document.getElementById('gh-turbine').value.toLowerCase();
+  const status = document.getElementById('gh-status').value;
+  const month = document.getElementById('gh-month').value;
+  const type = document.getElementById('gh-type').value;
+  const farmSel = document.getElementById('gh-farm-select').value;
+  let data = globalHistory.filter(r =>
+    (!farm || r.farmId.includes(farm)) &&
+    (!turbine || r.turbineId.includes(turbine)) &&
+    (!status || r.status === status) &&
+    (!type || r.type === type) &&
+    (!farmSel || r.farmId === farmSel) &&
+    (!month || new Date(r.date).toLocaleString('default',{month:'long'}) === month)
+  );
+  document.getElementById('global-history-tbody').innerHTML = data.map(r => `<tr>
+    <td class="mono">${r.date}</td>
+    <td class="mono">${r.id}</td>
+    <td class="mono">${r.farmId}</td>
+    <td class="mono">${r.turbineId}</td>
+    <td style="color:var(--text-secondary)">${r.type}</td>
+    <td><span class="badge ${statusClass(r.status)}" style="cursor:pointer"
+      onmouseenter="showTooltip(event,'${r.status} — ${r.id}','${r.desc.replace(/'/g,"&#39;").replace(/"/g,'&quot;')}')"
+      onmouseleave="hideTooltip()">${r.status}</span></td>
+    <td style="color:var(--text-muted);font-size:12px">${r.inspector}</td>
+  </tr>`).join('');
+}
+function renderGlobalHistory() { filterGlobalHistory(); }
+
+// ---- WEATHER DATA PER FARM ----
+const weatherByFarm = {
+  '042': {
+    location: 'Pacific Northwest, WA',
+    days: [
+      {date:'May 28th',day:'Today',icon:'⛅',bigIcon:'⛅',condition:'Partly Cloudy',temp:'62°F',wind:'14.2',humidity:'72%',pressure:'29.88 inHg',visibility:'9 mi',dewpoint:'52°F',gust:'21.0',suitable:true},
+      {date:'May 29th',day:'Thu',icon:'🌤',bigIcon:'🌤',condition:'Mostly Sunny',temp:'65°F',wind:'10.1',humidity:'65%',pressure:'29.92 inHg',visibility:'10 mi',dewpoint:'50°F',gust:'15.0',suitable:true},
+      {date:'May 30th',day:'Fri',icon:'🌧',bigIcon:'🌧',condition:'Rain',temp:'55°F',wind:'18.5',humidity:'88%',pressure:'29.52 inHg',visibility:'4 mi',dewpoint:'52°F',gust:'30.0',suitable:false},
+      {date:'May 31st',day:'Sat',icon:'⛈',bigIcon:'⛈',condition:'Thunderstorms',temp:'52°F',wind:'26.0',humidity:'92%',pressure:'29.30 inHg',visibility:'1 mi',dewpoint:'50°F',gust:'48.0',suitable:false},
+      {date:'Jun 1st',day:'Sun',icon:'🌥',bigIcon:'🌥',condition:'Mostly Cloudy',temp:'58°F',wind:'12.0',humidity:'74%',pressure:'29.70 inHg',visibility:'7 mi',dewpoint:'50°F',gust:'18.0',suitable:true},
+      {date:'Jun 2nd',day:'Mon',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'68°F',wind:'8.4',humidity:'58%',pressure:'30.00 inHg',visibility:'10 mi',dewpoint:'46°F',gust:'12.0',suitable:true},
+      {date:'Jun 3rd',day:'Tue',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'71°F',wind:'7.2',humidity:'55%',pressure:'30.05 inHg',visibility:'10 mi',dewpoint:'44°F',gust:'10.5',suitable:true},
+    ],
+    hourly: [3.5,3.0,2.8,3.2,4.8,7.0,9.5,11.8,13.0,14.2,14.0,14.5,15.2,14.8,13.5,12.2,11.5,10.8,9.6,8.4,7.0,6.0,5.0,4.2]
+  },
+  '107': {
+    location: 'Central Valley, CA',
+    days: [
+      {date:'May 28th',day:'Today',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'88°F',wind:'8.4',humidity:'28%',pressure:'29.95 inHg',visibility:'10 mi',dewpoint:'44°F',gust:'13.0',suitable:true},
+      {date:'May 29th',day:'Thu',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'92°F',wind:'9.2',humidity:'25%',pressure:'29.90 inHg',visibility:'10 mi',dewpoint:'42°F',gust:'14.0',suitable:true},
+      {date:'May 30th',day:'Fri',icon:'🌤',bigIcon:'🌤',condition:'Mostly Sunny',temp:'90°F',wind:'11.5',humidity:'30%',pressure:'29.85 inHg',visibility:'10 mi',dewpoint:'46°F',gust:'17.0',suitable:true},
+      {date:'May 31st',day:'Sat',icon:'🌤',bigIcon:'🌤',condition:'Mostly Sunny',temp:'87°F',wind:'10.8',humidity:'32%',pressure:'29.88 inHg',visibility:'10 mi',dewpoint:'48°F',gust:'16.0',suitable:true},
+      {date:'Jun 1st',day:'Sun',icon:'🌥',bigIcon:'🌥',condition:'High Clouds',temp:'84°F',wind:'13.2',humidity:'38%',pressure:'29.80 inHg',visibility:'10 mi',dewpoint:'50°F',gust:'20.0',suitable:true},
+      {date:'Jun 2nd',day:'Mon',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'89°F',wind:'7.8',humidity:'26%',pressure:'29.96 inHg',visibility:'10 mi',dewpoint:'42°F',gust:'11.0',suitable:true},
+      {date:'Jun 3rd',day:'Tue',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'91°F',wind:'8.1',humidity:'24%',pressure:'30.00 inHg',visibility:'10 mi',dewpoint:'40°F',gust:'12.0',suitable:true},
+    ],
+    hourly: [4.0,3.5,3.2,3.8,5.5,6.8,8.2,8.4,9.0,9.5,10.0,9.8,9.0,8.5,8.4,8.0,7.5,7.0,6.5,6.0,5.5,5.0,4.5,4.0]
+  },
+  '215': {
+    location: 'Texas Panhandle, TX',
+    days: [
+      {date:'May 28th',day:'Today',icon:'☀️',bigIcon:'☀️',condition:'Clear & Windy',temp:'79°F',wind:'22.5',humidity:'35%',pressure:'29.72 inHg',visibility:'10 mi',dewpoint:'50°F',gust:'35.0',suitable:true},
+      {date:'May 29th',day:'Thu',icon:'🌤',bigIcon:'🌤',condition:'Partly Cloudy',temp:'76°F',wind:'18.4',humidity:'40%',pressure:'29.68 inHg',visibility:'10 mi',dewpoint:'52°F',gust:'28.0',suitable:true},
+      {date:'May 30th',day:'Fri',icon:'⛈',bigIcon:'⛈',condition:'Severe Thunderstorms',temp:'68°F',wind:'35.2',humidity:'82%',pressure:'29.10 inHg',visibility:'2 mi',dewpoint:'62°F',gust:'65.0',suitable:false},
+      {date:'May 31st',day:'Sat',icon:'🌧',bigIcon:'🌧',condition:'Rain / Hail Risk',temp:'65°F',wind:'28.0',humidity:'75%',pressure:'29.30 inHg',visibility:'3 mi',dewpoint:'58°F',gust:'52.0',suitable:false},
+      {date:'Jun 1st',day:'Sun',icon:'🌤',bigIcon:'🌤',condition:'Partly Cloudy',temp:'73°F',wind:'16.0',humidity:'45%',pressure:'29.75 inHg',visibility:'10 mi',dewpoint:'50°F',gust:'24.0',suitable:true},
+      {date:'Jun 2nd',day:'Mon',icon:'☀️',bigIcon:'☀️',condition:'Sunny & Windy',temp:'81°F',wind:'20.1',humidity:'30%',pressure:'29.88 inHg',visibility:'10 mi',dewpoint:'46°F',gust:'30.0',suitable:true},
+      {date:'Jun 3rd',day:'Tue',icon:'☀️',bigIcon:'☀️',condition:'Sunny',temp:'84°F',wind:'15.5',humidity:'28%',pressure:'29.92 inHg',visibility:'10 mi',dewpoint:'44°F',gust:'22.0',suitable:true},
+    ],
+    hourly: [12.0,10.5,9.8,11.0,14.0,16.5,18.2,20.5,22.5,24.0,23.5,24.2,25.0,24.5,23.0,21.5,20.0,18.5,17.0,16.0,15.0,14.0,13.0,12.5]
+  }
+};
+
+let selectedWeatherFarm = '042';
+let selectedWeatherDay = 0;
+
+function changeWeatherLocation() {
+  selectedWeatherFarm = document.getElementById('weather-farm-select').value;
+  selectedWeatherDay = 0;
+  const farmData = weatherByFarm[selectedWeatherFarm];
+  const locNames = {'042':'Pacific Northwest, WA','107':'Central Valley, CA','215':'Texas Panhandle, TX'};
+  document.getElementById('weather-location-badge').innerHTML = `<i class="ti ti-circle-check" style="font-size:12px"></i> ${locNames[selectedWeatherFarm]}`;
+  renderWeather();
+}
+
+function renderWeather() {
+  const farmData = weatherByFarm[selectedWeatherFarm];
+  const weatherData = farmData.days;
+  const grid = document.getElementById('weather-day-grid');
+  grid.innerHTML = weatherData.map((d,i) => `
+    <div class="weather-day ${i===selectedWeatherDay?'active':''}" onclick="selectWeatherDay(${i})">
+      <div class="wd-date">${d.day}<br><span style="font-size:12px;color:var(--text-secondary)">${d.date}</span></div>
+      <div class="wd-icon">${d.icon}</div>
+      <div class="wd-temp" style="color:${d.suitable?'var(--text-primary)':'var(--red)'}">${d.temp}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px">${d.wind} mph</div>
+    </div>`).join('');
+  renderWeatherDetail();
+}
+
+function selectWeatherDay(i) {
+  selectedWeatherDay = i;
+  renderWeather();
+}
+
+function renderWeatherDetail() {
+  const farmData = weatherByFarm[selectedWeatherFarm];
+  const d = farmData.days[selectedWeatherDay];
+  const hourlyWind = farmData.hourly;
+  document.getElementById('w-date-title').textContent = d.date + ' — ' + (weatherByFarm[selectedWeatherFarm].location);
+  document.getElementById('w-condition-label').textContent = d.condition + (d.suitable ? ' — Suitable for drone operations' : ' — NOT suitable for drone operations');
+  document.getElementById('w-big-icon').textContent = d.bigIcon;
+  document.getElementById('weather-stats-grid').innerHTML = `
+    <div class="weather-stat"><div class="weather-stat-label">Temperature</div><div class="weather-stat-val">${d.temp}</div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Wind Speed</div><div class="weather-stat-val">${d.wind} <span class="weather-stat-unit">mph</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Wind Gust</div><div class="weather-stat-val">${d.gust} <span class="weather-stat-unit">mph</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Humidity</div><div class="weather-stat-val">${d.humidity}</div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Pressure</div><div class="weather-stat-val" style="font-size:16px">${d.pressure}</div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Visibility</div><div class="weather-stat-val">${d.visibility}</div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Dew Point</div><div class="weather-stat-val">${d.dewpoint}</div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Condition</div><div class="weather-stat-val" style="font-size:16px">${d.condition}</div></div>`;
+  const alertsEl = document.getElementById('weather-alerts');
+  if (d.suitable) {
+    alertsEl.innerHTML = `<div class="weather-alert good"><i class="ti ti-circle-check" style="font-size:16px;margin-top:1px"></i><div><strong>Conditions favorable</strong><br><span style="font-size:12px;opacity:0.85">Wind speeds within safe drone operating range. Visibility adequate. Proceed with standard protocols.</span></div></div>`;
+    if (parseFloat(d.wind) > 15) alertsEl.innerHTML += `<div class="weather-alert warning"><i class="ti ti-alert-triangle" style="font-size:16px;margin-top:1px"></i><div><strong>Elevated wind advisory</strong><br><span style="font-size:12px;opacity:0.85">Wind at ${d.wind} mph — confirm drone is rated for these conditions. Gusts reaching ${d.gust} mph.</span></div></div>`;
+    else if (parseFloat(d.wind) > 10) alertsEl.innerHTML += `<div class="weather-alert warning"><i class="ti ti-alert-triangle" style="font-size:16px;margin-top:1px"></i><div><strong>Moderate wind advisory</strong><br><span style="font-size:12px;opacity:0.85">Wind at ${d.wind} mph — monitor conditions. Gusts reaching ${d.gust} mph.</span></div></div>`;
+  } else {
+    alertsEl.innerHTML = `<div class="weather-alert danger"><i class="ti ti-x" style="font-size:16px;margin-top:1px"></i><div><strong>Operations NOT recommended</strong><br><span style="font-size:12px;opacity:0.85">Dangerous conditions: ${d.condition}. Wind gusts up to ${d.gust} mph. Do not deploy drones.</span></div></div>`;
+  }
+  const barsEl = document.getElementById('wind-bars');
+  const max = Math.max(...hourlyWind);
+  barsEl.innerHTML = hourlyWind.map((v,i) => {
+    const h = i < 12 ? (i===0?'12am':i+'am') : (i===12?'12pm':(i-12)+'pm');
+    const pct = (v/max*100).toFixed(0);
+    const color = v > 20 ? 'var(--red)' : v > 14 ? 'var(--amber)' : 'var(--cyan)';
+    return `<div class="wind-bar-wrap"><span class="wind-bar-label">${h}</span><div class="wind-bar"><div class="wind-bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="wind-val">${v}</span></div>`;
+  }).join('');
+  // Update flight badge
+  const badge = document.getElementById('weather-flight-badge');
+  if (d.suitable) {
+    badge.className = 'badge badge-green';
+    badge.innerHTML = '<i class="ti ti-check" style="font-size:11px"></i> Good Flight Conditions';
+  } else {
+    badge.className = 'badge badge-red';
+    badge.innerHTML = '<i class="ti ti-x" style="font-size:11px"></i> No-Fly Conditions';
+  }
+}
+
+// ---- FIELD SCHEDULE ----
+const upcomingOps = [
+  {dt:'2026-05-28 08:00',type:'Drone Inspection',farm:'042',opId:'INS-0892',assigned:'Team A',status:'Scheduled'},
+  {dt:'2026-05-28 13:30',type:'Drone Inspection',farm:'107',opId:'INS-0893',assigned:'Team B',status:'Scheduled'},
+  {dt:'2026-05-27 09:00',type:'Maintenance',farm:'042',opId:'MNT-0201',assigned:'Crew 3',status:'In Progress'},
+  {dt:'2026-05-29 07:00',type:'Drone Inspection',farm:'215',opId:'INS-0894',assigned:'Team A',status:'Scheduled'},
+  {dt:'2026-05-30 10:00',type:'Emergency',farm:'107',opId:'EMG-0045',assigned:'Crew 1',status:'Scheduled'},
+  {dt:'2026-06-01 08:30',type:'Drone Inspection',farm:'042',opId:'INS-0895',assigned:'Team C',status:'Scheduled'},
+];
+const historicalOps = [
+  {dt:'2026-05-14 08:00',type:'Drone Inspection',farm:'042',opId:'INS-0891',assigned:'Team A',status:'Completed'},
+  {dt:'2026-05-10 09:30',type:'Drone Inspection',farm:'107',opId:'INS-0890',assigned:'Team B',status:'Completed'},
+  {dt:'2026-04-28 07:00',type:'Maintenance',farm:'215',opId:'MNT-0200',assigned:'Crew 2',status:'Completed'},
+  {dt:'2026-04-14 08:00',type:'Drone Inspection',farm:'042',opId:'INS-0889',assigned:'Team C',status:'Completed'},
+  {dt:'2026-04-02 09:00',type:'Drone Inspection',farm:'107',opId:'INS-0888',assigned:'Team A',status:'Completed'},
+  {dt:'2026-03-20 08:30',type:'Emergency',farm:'042',opId:'EMG-0044',assigned:'Crew 1',status:'Completed'},
+  {dt:'2026-03-08 07:00',type:'Drone Inspection',farm:'215',opId:'INS-0887',assigned:'Team B',status:'Cancelled'},
+  {dt:'2026-02-25 09:00',type:'Maintenance',farm:'107',opId:'MNT-0199',assigned:'Crew 3',status:'Completed'},
+];
+function opsStatusBadge(s) {
+  if (s === 'Completed') return 'badge-green';
+  if (s === 'In Progress') return 'badge-cyan';
+  if (s === 'Scheduled') return 'badge-purple';
+  if (s === 'Cancelled') return 'badge-red';
+  return 'badge-gray';
+}
+function renderOpsTable(data, tbodyId) {
+  document.getElementById(tbodyId).innerHTML = data.map(r => `<tr>
+    <td class="mono">${r.dt}</td>
+    <td><span class="badge ${r.type==='Emergency'?'badge-red':r.type==='Maintenance'?'badge-amber':'badge-cyan'}" style="font-size:11px">${r.type}</span></td>
+    <td class="mono">${r.farm}</td>
+    <td class="mono">${r.opId}</td>
+    <td style="color:var(--text-muted);font-size:12px">${r.assigned}</td>
+    <td><span class="badge ${opsStatusBadge(r.status)}">${r.status}</span></td>
+  </tr>`).join('');
+}
+function filterUpcoming() {
+  const type = document.getElementById('up-type').value;
+  const farm = document.getElementById('up-farm').value;
+  const status = document.getElementById('up-status').value;
+  const sort = document.getElementById('up-sort').value;
+  let data = upcomingOps.filter(r => (!type||r.type===type)&&(!farm||r.farm===farm)&&(!status||r.status===status));
+  data.sort((a,b) => sort==='farm' ? a.farm.localeCompare(b.farm) : a.dt.localeCompare(b.dt));
+  renderOpsTable(data, 'upcoming-tbody');
+}
+function filterHistory2() {
+  const type = document.getElementById('his-type').value;
+  const farm = document.getElementById('his-farm').value;
+  const status = document.getElementById('his-status').value;
+  let data = historicalOps.filter(r => (!type||r.type===type)&&(!farm||r.farm===farm)&&(!status||r.status===status));
+  renderOpsTable(data, 'history2-tbody');
+}
+function renderFieldSchedule() { filterUpcoming(); filterHistory2(); }
+
+// ---- BIRD MIGRATION DATA ----
+const birdDataByFarm = {
+  '042': {
+    location: 'Pacific Northwest, WA',
+    activeCorridor: '2 Active Corridors',
+    corridors: [
+      {
+        icon: '🦅',
+        title: 'Pacific Flyway — Raptor Corridor',
+        badge: '<span class="badge badge-amber">Active Now</span>',
+        desc: 'A major raptor migration path running north-south along the Pacific Coast and Cascade mountain range. Affects drone operations in zones 2 and 4 of Wind Farm #042.',
+        details: [
+          {k:'Origin',v:'Northern British Columbia, Canada'},
+          {k:'Destination',v:'Baja California, Mexico'},
+          {k:'Active Dates',v:'May 15 – Jun 20, 2026'},
+          {k:'Peak Times',v:'Dawn (05:30–08:00) & Dusk (18:30–21:00)'},
+          {k:'Altitude Range',v:'30m – 300m AGL'},
+          {k:'Species',v:'Red-tailed Hawk, Osprey, Bald Eagle'},
+          {k:'Density',v:'High — 40–120 birds/day'},
+          {k:'Pattern',v:'Loose thermals, wind-assisted glide'},
+        ],
+        advisory: 'Avoid dawn/dusk operations in affected zones through June 20. Plan routes to remain below 30m AGL or above 350m AGL during peak migration windows.',
+        advisoryType: 'amber'
+      },
+      {
+        icon: '🦜',
+        title: 'Shorebird Coastal Corridor',
+        badge: '<span class="badge badge-green">Low Impact</span>',
+        desc: 'Smaller shorebird species traveling north for summer nesting. Concentrated along coastal wetlands and beaches, with minor inland activity near Farm #042 western perimeter.',
+        details: [
+          {k:'Origin',v:'Central California Coast'},
+          {k:'Destination',v:'Alaska & Pacific Northwest'},
+          {k:'Active Dates',v:'May 1 – Jun 10, 2026'},
+          {k:'Peak Times',v:'Mid-morning (09:00–12:00)'},
+          {k:'Altitude Range',v:'5m – 50m AGL'},
+          {k:'Species',v:'Western Sandpiper, Dunlin, Snipe'},
+          {k:'Density',v:'Moderate flocks'},
+          {k:'Pattern',v:'Low-altitude coastal, V-formation'},
+        ],
+        advisory: null
+      }
+    ]
+  },
+  '107': {
+    location: 'Central Valley, CA',
+    activeCorridor: '3 Active Corridors',
+    corridors: [
+      {
+        icon: '🦆',
+        title: 'Central Valley Waterfowl Flyway',
+        badge: '<span class="badge badge-amber">Active Now</span>',
+        desc: 'Dense waterfowl migration through the Central Valley corridor, one of the most heavily trafficked bird flyways in North America. Significant numbers passing over and near Farm #107.',
+        details: [
+          {k:'Origin',v:'Sacramento–San Joaquin Delta'},
+          {k:'Destination',v:'Northern California & Oregon wetlands'},
+          {k:'Active Dates',v:'Apr 20 – Jun 5, 2026'},
+          {k:'Peak Times',v:'Early morning (05:00–08:30) & evening (17:00–20:00)'},
+          {k:'Altitude Range',v:'10m – 150m AGL'},
+          {k:'Species',v:'Canada Goose, Pintail Duck, Teal'},
+          {k:'Density',v:'Very High — 500–2000 birds/day'},
+          {k:'Pattern',v:'V-formation, low thermal soaring'},
+        ],
+        advisory: 'High bird density over Farm #107 through June 5. Recommend mid-day-only operations (09:00–16:00) and avoid western quadrant zones. Coordinate with local wildlife authority.',
+        advisoryType: 'amber'
+      },
+      {
+        icon: '🦅',
+        title: 'Pacific Flyway — Songbird Migration',
+        badge: '<span class="badge badge-cyan">Monitoring</span>',
+        desc: 'Neotropical songbirds migrating northward through the Central Valley using riparian corridors. Concentrated near the valley floor and irrigation channels adjacent to Farm #107.',
+        details: [
+          {k:'Origin',v:'Mexico & Central America'},
+          {k:'Destination',v:'Pacific Northwest & Canada'},
+          {k:'Active Dates',v:'May 5 – Jun 15, 2026'},
+          {k:'Peak Times',v:'Overnight (22:00–04:00) & dawn'},
+          {k:'Altitude Range',v:'20m – 200m AGL'},
+          {k:'Species',v:'Warbler, Flycatcher, Vireo'},
+          {k:'Density',v:'Moderate — dispersed flocks'},
+          {k:'Pattern',v:'Nocturnal migration, dispersed pattern'},
+        ],
+        advisory: 'Nighttime drone operations not recommended through June 15 due to nocturnal migration activity.',
+        advisoryType: 'amber'
+      },
+      {
+        icon: '🦩',
+        title: 'Valley Shorebird Corridor',
+        badge: '<span class="badge badge-green">Low Impact</span>',
+        desc: 'Shorebird movement through the valley floor wetlands. Minimal impact on farm operations but tracked for ecological compliance.',
+        details: [
+          {k:'Origin',v:'Salton Sea, Southern CA'},
+          {k:'Destination',v:'Northern California coast'},
+          {k:'Active Dates',v:'May 1 – May 31, 2026'},
+          {k:'Peak Times',v:'Midday (11:00–15:00)'},
+          {k:'Altitude Range',v:'5m – 40m AGL'},
+          {k:'Species',v:'Avocet, Stilt, Dowitcher'},
+          {k:'Density',v:'Low — small flocks'},
+          {k:'Pattern',v:'Wetland hopping, low-altitude'},
+        ],
+        advisory: null
+      }
+    ]
+  },
+  '215': {
+    location: 'Texas Panhandle, TX',
+    activeCorridor: '2 Active Corridors',
+    corridors: [
+      {
+        icon: '🦅',
+        title: 'Central Flyway — Broad-wing Raptor Migration',
+        badge: '<span class="badge badge-amber">Active Now</span>',
+        desc: 'The Central Flyway carries millions of raptors north through the Texas Panhandle each spring. Conditions at Farm #215 place it directly in one of the heaviest raptor corridors in North America.',
+        details: [
+          {k:'Origin',v:'South Texas & Mexico'},
+          {k:'Destination',v:'Great Plains & Canada'},
+          {k:'Active Dates',v:'Apr 25 – Jun 10, 2026'},
+          {k:'Peak Times',v:'Mid-morning to afternoon (09:00–16:00)'},
+          {k:'Altitude Range',v:'50m – 500m AGL (thermal soaring)'},
+          {k:'Species',v:'Broad-winged Hawk, Swainson\'s Hawk, Turkey Vulture'},
+          {k:'Density',v:'Very High — 500–5,000 birds/day'},
+          {k:'Pattern',v:'Thermal kettle soaring, ridge-following'},
+        ],
+        advisory: 'High raptor activity throughout daylight hours through June 10. All drone operations at Farm #215 require pre-flight bird scan. Consider altitude restrictions above 50m during peak hours.',
+        advisoryType: 'amber'
+      },
+      {
+        icon: '🦢',
+        title: 'Central Flyway — Waterfowl & Shorebird Wave',
+        badge: '<span class="badge badge-cyan">Monitoring</span>',
+        desc: 'Mixed waterfowl and shorebird movement through the playa lakes region of the Texas Panhandle, passing along drainage corridors near Farm #215.',
+        details: [
+          {k:'Origin',v:'Gulf Coast, Texas'},
+          {k:'Destination',v:'Northern Great Plains & Canada'},
+          {k:'Active Dates',v:'May 1 – May 31, 2026'},
+          {k:'Peak Times',v:'Dawn (05:00–08:00)'},
+          {k:'Altitude Range',v:'15m – 100m AGL'},
+          {k:'Species',v:'Sandhill Crane, Pintail, Marbled Godwit'},
+          {k:'Density',v:'Moderate flocks'},
+          {k:'Pattern',v:'Linear corridor, low altitude'},
+        ],
+        advisory: 'Avoid early morning drone operations in eastern zones through May 31. Crane flocks can be large and unpredictable.',
+        advisoryType: 'amber'
+      }
+    ]
+  }
+};
+
+let currentBirdFarm = '042';
+
+function changeBirdLocation() {
+  currentBirdFarm = document.getElementById('bird-farm-select').value;
+  const locNames = {'042':'Pacific Northwest, WA','107':'Central Valley, CA','215':'Texas Panhandle, TX'};
+  document.getElementById('bird-location-badge').innerHTML = `<i class="ti ti-circle-check" style="font-size:12px"></i> ${locNames[currentBirdFarm]}`;
+  renderBirdMigration();
+}
+
+function renderBirdMigration() {
+  const data = birdDataByFarm[currentBirdFarm];
+  document.getElementById('bird-alert-badge').innerHTML = `<i class="ti ti-alert-triangle" style="font-size:11px"></i> ${data.activeCorridor}`;
+  const content = document.getElementById('bird-migration-content');
+  content.innerHTML = data.corridors.map(c => `
+    <div class="migration-card">
+      <div class="migration-title">
+        <span style="font-size:20px">${c.icon}</span>
+        ${c.title}
+        ${c.badge}
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${c.desc}</div>
+      <div class="migration-detail-grid">
+        ${c.details.map(d => `<div class="migration-detail-item">${d.k}<span>${d.v}</span></div>`).join('')}
+      </div>
+      <div class="migration-map-placeholder" style="margin-top:12px">
+        <svg width="100%" height="200" viewBox="0 0 700 200">
+          <defs>
+            <pattern id="bg-${c.title.replace(/\s/g,'')}" width="30" height="30" patternUnits="userSpaceOnUse">
+              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(46,125,50,0.08)" stroke-width="0.5"/>
+            </pattern>
+            <marker id="bird-arrow-${c.icon}" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L6,3 z" fill="rgba(245,158,11,0.8)"/>
+            </marker>
+          </defs>
+          <rect width="700" height="200" fill="url(#bg-${c.title.replace(/\s/g,'')})"/>
+          <path d="M150,10 Q155,50 145,100 Q140,140 150,190" fill="none" stroke="rgba(245,158,11,0.55)" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#bird-arrow-${c.icon})"/>
+          <path d="M240,5 Q245,50 235,100 Q230,145 240,195" fill="none" stroke="rgba(245,158,11,0.45)" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#bird-arrow-${c.icon})"/>
+          <path d="M330,8 Q325,55 318,100 Q315,142 322,196" fill="none" stroke="rgba(245,158,11,0.35)" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#bird-arrow-${c.icon})"/>
+          <rect x="185" y="82" width="72" height="26" rx="3" fill="rgba(46,125,50,0.12)" stroke="rgba(46,125,50,0.45)" stroke-width="0.5"/>
+          <text x="221" y="99" text-anchor="middle" font-size="10" fill="rgba(46,125,50,0.8)" font-family="IBM Plex Mono,monospace">Farm #${currentBirdFarm}</text>
+          <text x="60" y="18" font-size="10" fill="rgba(160,110,0,0.8)" font-family="DM Sans,sans-serif">↑ ${c.details[0].v.split(',')[0]}</text>
+          <text x="60" y="190" font-size="10" fill="rgba(160,110,0,0.8)" font-family="DM Sans,sans-serif">↓ Origin</text>
+          <line x1="500" y1="20" x2="520" y2="20" stroke="rgba(200,160,0,0.65)" stroke-width="2" stroke-dasharray="6,4"/>
+          <text x="525" y="24" font-size="10" fill="rgba(160,110,0,0.8)" font-family="DM Sans,sans-serif">Migration corridor</text>
+        </svg>
+      </div>
+      ${c.advisory ? `<div style="background:${c.advisoryType==='amber'?'var(--amber-dim)':'var(--red-dim)'};border:1px solid ${c.advisoryType==='amber'?'rgba(245,158,11,0.3)':'rgba(239,68,68,0.3)'};border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;color:${c.advisoryType==='amber'?'var(--amber)':'var(--red)'}">
+        <i class="ti ti-alert-triangle" style="font-size:13px;vertical-align:-2px;margin-right:6px"></i>
+        <strong>Drone Advisory:</strong> ${c.advisory}
+      </div>` : ''}
+    </div>`).join('');
+}
+
+// ---- ROUTING SIMULATION ----
+const droneColors = ['rgba(46,125,50,0.85)', 'rgba(167,139,250,0.85)', 'rgba(212,149,10,0.85)', 'rgba(46,170,90,0.85)'];
+let drones = [[],[],[],[]];
+let activeDrone = 0;
+let numDrones = 3;
+let simInterval = null;
+let simProgress = 0;
+let simRunning = false;
+let currentSimFarm = '042';
+
+// Farm-specific turbine positions
+const farmTurbinePositions = {
+  '042': [{x:120,y:200},{x:240,y:160},{x:360,y:130},{x:480,y:200},{x:600,y:180},{x:340,y:270},{x:520,y:310},{x:660,y:300}],
+  '107': [{x:100,y:160},{x:220,y:130},{x:340,y:110},{x:460,y:140},{x:580,y:120},{x:680,y:170},{x:160,y:260},{x:300,y:280},{x:440,y:300},{x:580,y:270}],
+  '215': [{x:80,y:150},{x:190,y:120},{x:300,y:100},{x:410,y:130},{x:520,y:110},{x:630,y:140},{x:720,y:180},{x:140,y:250},{x:260,y:270},{x:380,y:290},{x:500,y:260},{x:620,y:290}]
+};
+const farmSummaryNames = {'042':'Farm #042 — Pacific Northwest','107':'Farm #107 — Central Valley','215':'Farm #215 — Texas Panhandle'};
+
+function changeSimFarm() {
+  currentSimFarm = document.getElementById('sim-farm-select').value;
+  document.getElementById('sim-farm-badge').innerHTML = `<i class="ti ti-windmill" style="font-size:12px"></i> Farm #${currentSimFarm}`;
+  document.getElementById('sum-farm').textContent = farmSummaryNames[currentSimFarm];
+  clearSim();
+  drawSimCanvas();
+}
+
+function initSimCanvas() {
+  const canvas = document.getElementById('sim-canvas');
+  if (!canvas._inited) {
+    canvas._inited = true;
+    canvas.addEventListener('click', onCanvasClick);
+    canvas.addEventListener('contextmenu', e => { e.preventDefault(); undoLastPoint(); });
+    document.getElementById('sim-speed').addEventListener('input', function() {
+      document.getElementById('sim-speed-val').textContent = this.value;
+    });
+    document.querySelectorAll('.drone-tab[data-drone]').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.drone-tab[data-drone]').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        activeDrone = parseInt(this.dataset.drone);
+        updateSimStatus();
+      });
+    });
+    document.getElementById('add-drone-btn').addEventListener('click', () => {
+      if (numDrones >= 4) return;
+      const btn = document.createElement('button');
+      btn.className = 'drone-tab'; btn.dataset.drone = numDrones;
+      btn.textContent = 'Drone ' + (numDrones+1);
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.drone-tab[data-drone]').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        activeDrone = parseInt(this.dataset.drone);
+        updateSimStatus();
+      });
+      document.getElementById('drone-tabs').insertBefore(btn, document.getElementById('add-drone-btn'));
+      numDrones++;
+    });
+    document.getElementById('overlay-farm').addEventListener('change', drawSimCanvas);
+    document.getElementById('overlay-birds').addEventListener('change', drawSimCanvas);
+    document.getElementById('overlay-wind').addEventListener('change', drawSimCanvas);
+    document.getElementById('play-btn').addEventListener('click', playSim);
+    document.getElementById('pause-btn').addEventListener('click', pauseSim);
+    document.getElementById('reset-btn').addEventListener('click', resetSim);
+    document.getElementById('clear-sim-btn').addEventListener('click', clearSim);
+    document.getElementById('run-sim-btn').addEventListener('click', playSim);
+    document.getElementById('export-sim-btn').addEventListener('click', exportRoute);
+  }
+  drawSimCanvas();
+}
+
+function onCanvasClick(e) {
+  const rect = e.target.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width * 900);
+  const y = ((e.clientY - rect.top) / rect.height * 460);
+  drones[activeDrone].push({x, y});
+  updateSimStatus();
+  drawSimCanvas();
+}
+
+function undoLastPoint() {
+  if (drones[activeDrone].length > 0) {
+    drones[activeDrone].pop();
+    updateSimStatus();
+    drawSimCanvas();
+  }
+}
+
+function clearSim() {
+  drones = [[],[],[],[]];
+  simProgress = 0;
+  simRunning = false;
+  if (simInterval) clearInterval(simInterval);
+  updateSimStatus();
+  drawSimCanvas();
+}
+
+function updateSimStatus() {
+  const total = drones[activeDrone].length;
+  document.getElementById('sim-status-text').textContent = `${total} waypoint${total!==1?'s':''} — Drone ${activeDrone+1}`;
+  document.getElementById('sum-d1').textContent = drones[0].length;
+  document.getElementById('sum-d2').textContent = drones[1].length;
+  document.getElementById('sum-d3').textContent = drones[2].length;
+  const totalPts = drones.slice(0,numDrones).reduce((a,b)=>a+b.length,0);
+  document.getElementById('sum-time').textContent = totalPts > 0 ? (totalPts*2.5).toFixed(0) + ' min (est.)' : '—';
+  let risk = 'Low'; let riskClass = 'badge-green';
+  for (let i=0;i<numDrones;i++) for (let j=i+1;j<numDrones;j++) {
+    if (drones[i].length > 0 && drones[j].length > 0) { risk = 'Moderate'; riskClass = 'badge-amber'; break; }
+  }
+  document.getElementById('sum-risk').className = 'badge ' + riskClass;
+  document.getElementById('sum-risk').textContent = risk;
+}
+
+function drawSimCanvas() {
+  const canvas = document.getElementById('sim-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,900,460);
+  ctx.strokeStyle = 'rgba(46,125,50,0.07)';
+  ctx.lineWidth = 0.5;
+  for (let x=0;x<900;x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,460); ctx.stroke(); }
+  for (let y=0;y<460;y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(900,y); ctx.stroke(); }
+
+  // Draw farm label
+  ctx.fillStyle = 'rgba(46,125,50,0.25)';
+  ctx.font = '500 11px DM Sans';
+  ctx.textAlign = 'left';
+  ctx.fillText(farmSummaryNames[currentSimFarm], 10, 20);
+
+  if (document.getElementById('overlay-farm') && document.getElementById('overlay-farm').checked) {
+    const turbinePositions = farmTurbinePositions[currentSimFarm] || farmTurbinePositions['042'];
+    turbinePositions.forEach((t,idx) => {
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 10, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(46,125,50,0.12)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(46,125,50,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(46,125,50,0.85)';
+      ctx.font = '10px IBM Plex Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚙', t.x, t.y+4);
+    });
+  }
+
+  if (document.getElementById('overlay-birds') && document.getElementById('overlay-birds').checked) {
+    ctx.fillStyle = 'rgba(200,160,0,0.07)';
+    ctx.fillRect(180, 0, 80, 460);
+    ctx.fillRect(300, 0, 60, 460);
+    ctx.strokeStyle = 'rgba(200,160,0,0.30)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(180,0); ctx.lineTo(180,460); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(260,0); ctx.lineTo(260,460); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(300,0); ctx.lineTo(300,460); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(360,0); ctx.lineTo(360,460); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(160,120,0,0.7)';
+    ctx.font = '10px DM Sans';
+    ctx.textAlign = 'center';
+    ctx.fillText('Bird corridor', 220, 14);
+    ctx.fillText('Bird corridor', 330, 14);
+  }
+
+  if (document.getElementById('overlay-wind') && document.getElementById('overlay-wind').checked) {
+    ctx.strokeStyle = 'rgba(46,125,50,0.20)';
+    ctx.lineWidth = 0.8;
+    for (let x=80;x<860;x+=80) for (let y=40;y<420;y+=60) {
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-20+Math.random()*10,y+15+Math.random()*10); ctx.stroke();
+    }
+  }
+
+  for (let di=0;di<numDrones;di++) {
+    const pts = drones[di];
+    if (pts.length < 1) continue;
+    const col = droneColors[di];
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    pts.forEach((p,i) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+      ctx.fillStyle = di === activeDrone ? col : col.replace('0.85','0.5');
+      ctx.fill();
+      if (i===0) {
+        ctx.fillStyle = col;
+        ctx.font = '10px DM Sans';
+        ctx.textAlign = 'center';
+        ctx.fillText('D'+(di+1), p.x, p.y-10);
+      }
+    });
+    if (simRunning && pts.length >= 2) {
+      const totalSegs = pts.length - 1;
+      const segIdx = Math.min(Math.floor(simProgress * totalSegs), totalSegs-1);
+      const segProg = (simProgress * totalSegs) - segIdx;
+      const ax = pts[segIdx].x + (pts[segIdx+1].x - pts[segIdx].x) * segProg;
+      const ay = pts[segIdx].y + (pts[segIdx+1].y - pts[segIdx].y) * segProg;
+      ctx.beginPath();
+      ctx.arc(ax, ay, 8, 0, Math.PI*2);
+      ctx.fillStyle = col;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ax, ay, 14, 0, Math.PI*2);
+      ctx.strokeStyle = col.replace('0.85','0.3');
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+  ctx.setLineDash([]);
+}
+
+function playSim() {
+  if (simInterval) clearInterval(simInterval);
+  simRunning = true;
+  const speed = parseInt(document.getElementById('sim-speed').value);
+  simInterval = setInterval(() => {
+    simProgress += 0.004 * speed;
+    if (simProgress >= 1) { simProgress = 1; clearInterval(simInterval); simRunning = false; }
+    document.getElementById('sim-progress').textContent = (simProgress * 100).toFixed(0) + '%';
+    drawSimCanvas();
+  }, 30);
+}
+function pauseSim() { if (simInterval) clearInterval(simInterval); simRunning = false; }
+function resetSim() {
+  if (simInterval) clearInterval(simInterval);
+  simRunning = false; simProgress = 0;
+  document.getElementById('sim-progress').textContent = '—';
+  drawSimCanvas();
+}
+function exportRoute() {
+  const data = {
+    farm: currentSimFarm,
+    farmName: farmSummaryNames[currentSimFarm],
+    exportedAt: new Date().toISOString(),
+    drones: drones.slice(0,numDrones).map((pts,i) => ({id:i+1, color: droneColors[i], waypoints: pts}))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `drone-routes-farm${currentSimFarm}-${Date.now()}.json`; a.click();
+  const tb = document.getElementById('sim-status-text');
+  const orig = tb.textContent;
+  tb.textContent = '✓ Route exported!';
+  setTimeout(() => tb.textContent = orig, 2000);
+}
+
+// ---- INIT ----
+renderHistoryTable();
+renderGlobalHistory();
+renderWeather();
+renderBirdMigration();
+</script>
+</body>
+</html>
